@@ -27,6 +27,7 @@ const DashboardLayout = ({ children }) => {
     const navItems = [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { to: '/call', icon: Phone, label: 'Buat Panggilan' },
+        { to: '/otp-bot', icon: Bot, label: 'OTP Bot' },
         { to: '/history', icon: History, label: 'Riwayat' },
     ];
 
