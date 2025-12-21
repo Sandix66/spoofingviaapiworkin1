@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import MakeCallPage from './pages/MakeCallPage';
 import HistoryPage from './pages/HistoryPage';
+import OTPBotPage from './pages/OTPBotPage';
 import DashboardLayout from './components/DashboardLayout';
 import './App.css';
 
