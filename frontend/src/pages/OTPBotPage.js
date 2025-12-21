@@ -12,6 +12,7 @@ import { ScrollArea } from '../components/ui/scroll-area';
 import { 
     Phone, 
     PhoneCall,
+    PhoneOff,
     CheckCircle2,
     XCircle,
     Play,
@@ -22,7 +23,8 @@ import {
     User,
     Shield,
     Hash,
-    Volume2
+    Volume2,
+    RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
