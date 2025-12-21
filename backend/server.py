@@ -229,6 +229,9 @@ async def send_voice_call(request: CallRequest, current_user: dict = Depends(get
         "Accept": "application/json"
     }
     
+    # Repeat message for longer duration and add pause between repeats
+    full_message = (request.message_text + ". . . ") * request.repeat_count
+    
     # Use Infobip Voice TTS API with correct format
     payload = {
         "messages": [
@@ -237,9 +240,11 @@ async def send_voice_call(request: CallRequest, current_user: dict = Depends(get
                 "destinations": [
                     {"to": request.phone_number}
                 ],
-                "text": request.message_text,
+                "text": full_message,
                 "language": request.language,
-                "speechRate": request.speech_rate
+                "speechRate": request.speech_rate,
+                "notifyUrl": f"https://spoofing-connect.preview.emergentagent.com/api/voice/webhook/delivery-report",
+                "notifyContentType": "application/json"
             }
         ]
     }
