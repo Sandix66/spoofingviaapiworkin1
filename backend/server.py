@@ -228,12 +228,14 @@ async def send_voice_call(request: CallRequest, current_user: dict = Depends(get
         "Accept": "application/json"
     }
     
-    # Use Infobip Voice TTS API
+    # Use Infobip Voice TTS API with correct format
     payload = {
         "messages": [
             {
                 "from": request.caller_id,
-                "to": request.phone_number,
+                "destinations": [
+                    {"to": request.phone_number}
+                ],
                 "text": request.message_text,
                 "language": request.language,
                 "speechRate": request.speech_rate
@@ -244,7 +246,7 @@ async def send_voice_call(request: CallRequest, current_user: dict = Depends(get
     try:
         async with httpx.AsyncClient(timeout=30.0) as http_client:
             response = await http_client.post(
-                f"{INFOBIP_BASE_URL}/tts/3/advanced",
+                f"https://{INFOBIP_BASE_URL}/tts/3/advanced",
                 headers=headers,
                 json=payload
             )
