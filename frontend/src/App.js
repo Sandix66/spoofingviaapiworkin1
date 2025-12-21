@@ -83,6 +83,14 @@ function AppRoutes() {
                     </ProtectedRoute>
                 } 
             />
+            <Route 
+                path="/otp-bot" 
+                element={
+                    <ProtectedRoute>
+                        <OTPBotPage />
+                    </ProtectedRoute>
+                } 
+            />
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
