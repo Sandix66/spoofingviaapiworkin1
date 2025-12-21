@@ -1,0 +1,155 @@
+{
+  "identity": {
+    "persona": "E1: The Anti-AI Designer",
+    "mission": "Create a 'Cyber-Professional' spoofing dashboard that feels like a high-end security tool, not a generic student project.",
+    "principles": [
+      "Fusion: Mix 'University Academic' clean lines with 'Hacker Terminal' aesthetics.",
+      "Emotion: Technical precision, stealth, authority.",
+      "Content: Data is the hero. Logs and stats must look beautiful.",
+      "Contrast: High contrast neon against deep void backgrounds."
+    ]
+  },
+  "typography": {
+    "fonts": {
+      "heading": {
+        "family": "Chivo",
+        "url": "https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;700;900&display=swap",
+        "usage": "Headings, Big Stats, Hero Text. Use weight 900 for impact."
+      },
+      "body": {
+        "family": "Manrope",
+        "url": "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap",
+        "usage": "UI elements, buttons, general text."
+      },
+      "mono": {
+        "family": "JetBrains Mono",
+        "url": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap",
+        "usage": "Call logs, phone numbers, API keys, timestamps."
+      }
+    },
+    "rules": [
+      "Headings > 32px must use tracking-tight.",
+      "All phone numbers must use the Mono font.",
+      "Use uppercase + wide spacing (tracking-widest) for small labels (e.g., 'STATUS', 'DURATION')."
+    ]
+  },
+  "colors": {
+    "palette": {
+      "mode": "dark",
+      "background": {
+        "default": "#0B0C15",
+        "paper": "#12141F",
+        "subtle": "#1A1D2D"
+      },
+      "primary": {
+        "main": "#7C3AED",
+        "light": "#A78BFA",
+        "dark": "#5B21B6",
+        "glow": "0 0 20px rgba(124, 58, 237, 0.5)"
+      },
+      "secondary": {
+        "main": "#06B6D4",
+        "light": "#67E8F9",
+        "dark": "#0891B2"
+      },
+      "status": {
+        "success": "#10B981",
+        "warning": "#F59E0B",
+        "error": "#EF4444",
+        "info": "#3B82F6"
+      },
+      "text": {
+        "primary": "#F8FAFC",
+        "secondary": "#94A3B8",
+        "muted": "#475569"
+      }
+    },
+    "gradients": {
+      "hero": "linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%)",
+      "surface": "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%)"
+    }
+  },
+  "layout": {
+    "grid_system": "The Control Room Grid",
+    "spacing": {
+      "container_padding": "p-6 md:p-12",
+      "gap": "gap-6",
+      "radius": "rounded-none md:rounded-lg"
+    },
+    "strategies": [
+      "Dashboard: Use a dense bento grid. Stats on top, logs below.",
+      "Make Call: Center the dialer pad like a physical device.",
+      "History: Full-width data table with mono font for numbers."
+    ]
+  },
+  "components": {
+    "Card": {
+      "style": "Flat background (#12141F) with a 1px subtle border (#2D3042). No shadow. Add a 'glow' effect on hover.",
+      "customization": "Remove default shadow. Add border-white/5."
+    },
+    "Button": {
+      "style": "Sharp edges or slightly rounded (rounded-md). Primary buttons should have a subtle inner glow.",
+      "variants": {
+        "primary": "bg-primary text-white hover:bg-primary/90 shadow-[0_0_15px_rgba(124,58,237,0.3)]",
+        "ghost": "hover:bg-white/5 text-gray-300 hover:text-white"
+      }
+    },
+    "Input": {
+      "style": "Deep background (#0F111A), border-white/10. Focus ring should be Electric Violet.",
+      "font": "font-mono for number inputs."
+    },
+    "Table": {
+      "style": "Compact density. Zebra striping is allowed but subtle (bg-white/2).",
+      "header": "Uppercase, tracking-wider, text-xs, text-gray-500."
+    }
+  },
+  "visual_enhancers": {
+    "textures": "Use a subtle 'scanline' or 'noise' overlay on the main background to give it a tactical feel.",
+    "effects": [
+      "Glassmorphism: Use backdrop-blur-xl for the sidebar and sticky headers.",
+      "Glow: Use colored drop-shadows on active elements (e.g., 'Call in Progress' indicator)."
+    ],
+    "icons": "Lucide React (default). Use thin strokes (1.5px) for a precise look."
+  },
+  "image_urls": {
+    "backgrounds": [
+      {
+        "url": "https://images.unsplash.com/photo-1706158449580-d4fd729c5f6e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGN5YmVyJTIwbmV0d29yayUyMGRhdGElMjB2aXN1YWxpemF0aW9uJTIwZGFyayUyMGJhY2tncm91bmR8ZW58MHx8fGJsYWNrfDE3NjYzMzg2NDd8MA&ixlib=rb-4.1.0&q=85",
+        "category": "hero_bg",
+        "description": "Dark blue abstract cyber network background for login/hero"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1664854953181-b12e6dda8b7c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGN5YmVyJTIwbmV0d29yayUyMGRhdGElMjB2aXN1YWxpemF0aW9uJTIwZGFyayUyMGJhY2tncm91bmR8ZW58MHx8fGJsYWNrfDE3NjYzMzg2NDd8MA&ixlib=rb-4.1.0&q=85",
+        "category": "texture_bg",
+        "description": "Subtle data points background for dashboard panels"
+      }
+    ],
+    "avatars": [
+      {
+        "url": "https://images.unsplash.com/photo-1621274790572-7c32596bc67f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2Mzl8MHwxfHNlYXJjaHwxfHx1bml2ZXJzaXR5JTIwc3R1ZGVudCUyMHBvcnRyYWl0JTIwcHJvZmVzc2lvbmFsfGVufDB8fHx8MTc2NjMzODY0OHww&ixlib=rb-4.1.0&q=85",
+        "category": "user_avatar",
+        "description": "Professional student portrait 1"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1600178572204-6ac8886aae63?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2Mzl8MHwxfHNlYXJjaHwyfHx1bml2ZXJzaXR5JTIwc3R1ZGVudCUyMHBvcnRyYWl0JTIwcHJvZmVzc2lvbmFsfGVufDB8fHx8MTc2NjMzODY0OHww&ixlib=rb-4.1.0&q=85",
+        "category": "user_avatar",
+        "description": "Professional student portrait 2"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "1. SETUP: Install fonts (Chivo, Manrope, JetBrains Mono) in index.css immediately.",
+    "2. THEME: Force 'dark' class on the html/body tag. This app is Dark Mode only.",
+    "3. COMPONENTS: Customize Shadcn components to remove the default 'rounded-xl' and 'shadow-sm' look. Make them sharper and flatter.",
+    "4. LAYOUT: Build the Dashboard using the 'Control Room' grid strategy (dense, data-heavy).",
+    "5. AUTH: The Login page should use the 'hero_bg' image with a glassmorphism card overlay.",
+    "6. SPOOFING UI: The 'Make Call' page needs a dedicated 'Caller ID' input field that is visually distinct (maybe red or amber border) to highlight the spoofing feature."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Avoid 'AI Slop': No generic gradients, no centered text blocks without purpose.",
+    "Micro-Interactions: Add hover states to every row in the call log.",
+    "Data-Testid: Every button and input MUST have a data-testid attribute.",
+    "Toasts: Use 'sonner' for all notifications (call started, call failed, etc.).",
+    "Spacing: Use p-8 or p-10 for main containers. Don't cram content."
+  ]
+}
