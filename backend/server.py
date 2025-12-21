@@ -245,8 +245,12 @@ async def send_voice_call(request: CallRequest, current_user: dict = Depends(get
     
     try:
         async with httpx.AsyncClient(timeout=30.0) as http_client:
+            # Build correct URL - INFOBIP_BASE_URL is just the domain
+            api_url = f"https://{INFOBIP_BASE_URL}/tts/3/advanced" if not INFOBIP_BASE_URL.startswith('http') else f"{INFOBIP_BASE_URL}/tts/3/advanced"
+            logger.info(f"Calling Infobip API: {api_url}")
+            
             response = await http_client.post(
-                f"https://{INFOBIP_BASE_URL}/tts/3/advanced",
+                api_url,
                 headers=headers,
                 json=payload
             )
