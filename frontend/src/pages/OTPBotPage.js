@@ -433,6 +433,17 @@ const OTPBotPage = () => {
                                     )}
                                     {isCallActive ? 'Call in Progress' : 'Initiate Call'}
                                 </Button>
+                                {isCallActive && (
+                                    <Button
+                                        onClick={handleHangup}
+                                        variant="destructive"
+                                        data-testid="hangup-btn"
+                                        className="bg-red-600 hover:bg-red-700"
+                                    >
+                                        <PhoneOff className="w-4 h-4 mr-2" />
+                                        Hangup
+                                    </Button>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
