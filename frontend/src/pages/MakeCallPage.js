@@ -43,7 +43,8 @@ const MakeCallPage = () => {
         caller_id: '',
         message_text: '',
         language: 'en',
-        speech_rate: 1.0
+        speech_rate: 1.0,
+        repeat_count: 2
     });
     const [isLoading, setIsLoading] = useState(false);
     const [lastCallResult, setLastCallResult] = useState(null);
