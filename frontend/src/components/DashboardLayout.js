@@ -9,7 +9,8 @@ import {
     LogOut,
     Menu,
     X,
-    User
+    User,
+    Bot
 } from 'lucide-react';
 import { useState } from 'react';
 
