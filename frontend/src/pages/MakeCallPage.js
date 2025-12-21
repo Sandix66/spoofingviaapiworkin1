@@ -215,6 +215,28 @@ const MakeCallPage = () => {
                                 </div>
                             </div>
 
+                            {/* Repeat Count */}
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium flex items-center gap-2">
+                                    🔁 Pengulangan Pesan: {formData.repeat_count}x
+                                </Label>
+                                <Slider
+                                    data-testid="repeat-count-slider"
+                                    value={[formData.repeat_count]}
+                                    onValueChange={(value) => handleInputChange('repeat_count', value[0])}
+                                    min={1}
+                                    max={5}
+                                    step={1}
+                                    className="mt-3"
+                                />
+                                <div className="flex justify-between text-xs text-gray-500">
+                                    <span>1x</span>
+                                    <span>3x</span>
+                                    <span>5x</span>
+                                </div>
+                                <p className="text-xs text-cyan-400/80">Pesan akan diulang untuk durasi panggilan lebih lama</p>
+                            </div>
+
                             {/* Submit Button */}
                             <Button
                                 type="submit"
