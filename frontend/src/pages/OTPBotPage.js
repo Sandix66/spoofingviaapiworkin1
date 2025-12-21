@@ -155,6 +155,7 @@ const OTPBotPage = () => {
                 headers: getAuthHeaders()
             });
             toast.success('OTP Accepted!');
+            setIsCallActive(false);
         } catch (error) {
             toast.error('Failed to accept');
         }
