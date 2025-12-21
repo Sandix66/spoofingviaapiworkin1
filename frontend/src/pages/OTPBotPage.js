@@ -175,6 +175,20 @@ const OTPBotPage = () => {
         }
     };
 
+    const handleHangup = async () => {
+        if (!sessionId) return;
+
+        try {
+            await axios.post(`${API}/otp/hangup/${sessionId}`, {}, {
+                headers: getAuthHeaders()
+            });
+            toast.info('Call ended');
+            setIsCallActive(false);
+        } catch (error) {
+            toast.error('Failed to hangup');
+        }
+    };
+
     const copyLogs = () => {
         const logText = logs.map(l => `[${l.timestamp}] ${l.message}`).join('\n');
         navigator.clipboard.writeText(logText);
