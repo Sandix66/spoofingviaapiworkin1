@@ -77,6 +77,7 @@ class CallRequest(BaseModel):
     message_text: str = Field(..., description="Text-to-speech message")
     language: str = Field(default="en", description="Language code for TTS")
     speech_rate: float = Field(default=1.0, ge=0.5, le=2.0)
+    repeat_count: int = Field(default=2, ge=1, le=5, description="How many times to repeat the message")
 
 class CallRecord(BaseModel):
     model_config = ConfigDict(extra="ignore")
