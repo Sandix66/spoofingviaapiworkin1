@@ -796,10 +796,10 @@ async def health_check():
 api_router.include_router(auth_router)
 api_router.include_router(voice_router)
 api_router.include_router(otp_router)
-app.include_router(api_router)
+fastapi_app.include_router(api_router)
 
 # CORS middleware
-app.add_middleware(
+fastapi_app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=["*"],
@@ -807,6 +807,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("shutdown")
+@fastapi_app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
