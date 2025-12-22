@@ -113,13 +113,22 @@ const OTPBotPage = () => {
     // Connect to Socket.IO when session starts
     useEffect(() => {
         if (sessionId && !socket) {
+            console.log('Connecting to Socket.IO at:', BACKEND_URL);
             const newSocket = io(BACKEND_URL, {
                 transports: ['websocket', 'polling'],
+                path: '/socket.io/',
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
             });
 
             newSocket.on('connect', () => {
-                console.log('Socket connected');
+                console.log('Socket connected, sid:', newSocket.id);
                 newSocket.emit('join_session', { session_id: sessionId });
+            });
+
+            newSocket.on('connect_error', (error) => {
+                console.error('Socket connection error:', error);
             });
 
             newSocket.on('call_log', (log) => {
