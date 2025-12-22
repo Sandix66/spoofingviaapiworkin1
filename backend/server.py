@@ -287,28 +287,32 @@ async def fetch_and_emit_recording(session_id: str, call_id: str):
             
             if recording["status_code"] == 200:
                 data = recording["data"]
-                # Check different response formats
-                recordings = data.get("recordings", []) or data.get("files", [])
+                files = data.get("files", [])
                 
-                if recordings:
-                    recording_url = recordings[0].get("url") or recordings[0].get("fileUrl")
-                    if recording_url:
-                        await emit_log(session_id, "recording", f"🎤 Recording available", {"url": recording_url})
+                if files:
+                    file_info = files[0]
+                    file_id = file_info.get("id")
+                    
+                    if file_id:
+                        # Get download URL for the file
+                        download_url = f"{INFOBIP_BASE_URL}/calls/1/recordings/files/{file_id}"
+                        
+                        # Also try to get direct download link
+                        file_response = await infobip_request("GET", f"/calls/1/recordings/files/{file_id}")
+                        
+                        if file_response["status_code"] == 200:
+                            # The response might be the file itself or a redirect
+                            actual_url = file_response["data"].get("url") or download_url
+                        else:
+                            actual_url = download_url
+                        
+                        await emit_log(session_id, "recording", f"🎤 Recording available ({file_info.get('duration', 0)}s)", {"url": actual_url, "fileId": file_id})
                         await db.otp_sessions.update_one(
                             {"id": session_id},
-                            {"$set": {"recording_url": recording_url}}
+                            {"$set": {"recording_url": actual_url, "recording_file_id": file_id}}
                         )
-                        logger.info(f"Recording URL saved: {recording_url}")
+                        logger.info(f"Recording URL saved: {actual_url}")
                         return
-                
-                # Also check if URL is directly in response
-                if data.get("url"):
-                    await emit_log(session_id, "recording", f"🎤 Recording available", {"url": data["url"]})
-                    await db.otp_sessions.update_one(
-                        {"id": session_id},
-                        {"$set": {"recording_url": data["url"]}}
-                    )
-                    return
             
             # Wait before retry
             await asyncio.sleep(3)
