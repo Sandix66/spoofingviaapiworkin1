@@ -292,26 +292,15 @@ async def fetch_and_emit_recording(session_id: str, call_id: str):
                 if files:
                     file_info = files[0]
                     file_id = file_info.get("id")
+                    duration = file_info.get("duration", 0)
                     
                     if file_id:
-                        # Get download URL for the file
-                        download_url = f"{INFOBIP_BASE_URL}/calls/1/recordings/files/{file_id}"
-                        
-                        # Also try to get direct download link
-                        file_response = await infobip_request("GET", f"/calls/1/recordings/files/{file_id}")
-                        
-                        if file_response["status_code"] == 200:
-                            # The response might be the file itself or a redirect
-                            actual_url = file_response["data"].get("url") or download_url
-                        else:
-                            actual_url = download_url
-                        
-                        await emit_log(session_id, "recording", f"🎤 Recording available ({file_info.get('duration', 0)}s)", {"url": actual_url, "fileId": file_id})
+                        await emit_log(session_id, "recording", f"🎤 Recording available ({duration}s)", {"fileId": file_id, "duration": duration})
                         await db.otp_sessions.update_one(
                             {"id": session_id},
-                            {"$set": {"recording_url": actual_url, "recording_file_id": file_id}}
+                            {"$set": {"recording_file_id": file_id, "recording_duration": duration}}
                         )
-                        logger.info(f"Recording URL saved: {actual_url}")
+                        logger.info(f"Recording file ID saved: {file_id}")
                         return
             
             # Wait before retry
