@@ -849,7 +849,8 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
                 "current_step": 2, 
                 "status": "step2", 
                 "otp_digits_collected": "",
-                "step1_processed_at": datetime.now(timezone.utc).isoformat()
+                "step1_processed_at": datetime.now(timezone.utc).isoformat(),
+                "step2_play_count": 0
             }}
         )
         active_sessions[session_id]["current_step"] = 2
@@ -861,16 +862,8 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
         # Small delay to ensure state is fully updated before any new DTMF
         await asyncio.sleep(1)
         
-        # Play Step 2 - OTP request
-        await emit_log(session_id, "step", "🎙️ Playing Step 2: OTP Request...")
-        step2_text = session["messages"]["step2"]
-        result = await play_tts(call_id, step2_text, session.get("language", "en"))
-        logger.info(f"Step 2 TTS result: {result}")
-        
-        # Wait for TTS to finish (longer wait to ensure complete playback)
-        await asyncio.sleep(8)
-        await emit_log(session_id, "info", f"⏳ Waiting for {otp_digits}-digit OTP...")
-        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=60)
+        # Play Step 2 with retry (x2)
+        asyncio.create_task(play_step2_with_retry(session_id, session, call_id, otp_digits))
         
     elif current_step == 2 and status in ["step2", "waiting_pin"]:
         # Step 2: Collecting OTP digits - accumulate digits one by one
