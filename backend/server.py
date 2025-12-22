@@ -312,7 +312,7 @@ async def fetch_and_emit_recording(session_id: str, call_id: str):
         logger.error(f"Error fetching recording: {e}")
 
 async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
-    """Wait for call to be established then play Step 1"""
+    """Wait for call to be established then play Step 1 with retry"""
     try:
         # Wait for call to be answered (poll status)
         max_attempts = 30  # 30 seconds max wait
@@ -346,21 +346,14 @@ async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
                     # Update status
                     await db.otp_sessions.update_one(
                         {"id": session_id},
-                        {"$set": {"status": "step1", "current_step": 1, "amd_result": amd_result or "HUMAN"}}
+                        {"$set": {"status": "step1", "current_step": 1, "amd_result": amd_result or "HUMAN", "step1_play_count": 0}}
                     )
                     active_sessions[session_id]["current_step"] = 1
                     active_sessions[session_id]["status"] = "step1"
+                    active_sessions[session_id]["step1_play_count"] = 0
                     
-                    # Play Step 1 greeting
-                    await emit_log(session_id, "step", "🎙️ Playing Step 1 message...")
-                    step1_text = session["messages"]["step1"]
-                    tts_result = await play_tts(call_id, step1_text, session.get("language", "en"))
-                    logger.info(f"TTS Step 1 result: {tts_result}")
-                    
-                    # Wait for TTS to finish then start DTMF capture
-                    await asyncio.sleep(10)  # Wait for TTS
-                    await emit_log(session_id, "info", "⏳ Waiting for user input (1 or 0)...")
-                    await start_dtmf_capture(call_id, max_length=1, timeout=30)
+                    # Play Step 1 with retry logic (x2)
+                    await play_step1_with_retry(session_id, session, call_id)
                     return
                 
                 elif call_state == "BUSY":
