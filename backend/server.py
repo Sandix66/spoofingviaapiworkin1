@@ -50,10 +50,10 @@ logger = logging.getLogger(__name__)
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 
 # Create FastAPI app
-app = FastAPI(title="OTP Bot Call API", version="2.0.0")
+fastapi_app = FastAPI(title="OTP Bot Call API", version="2.0.0")
 
-# Create Socket.IO ASGI app
-socket_app = socketio.ASGIApp(sio, app)
+# Create Socket.IO ASGI app - this wraps FastAPI
+app = socketio.ASGIApp(sio, fastapi_app)
 
 # Store active sessions - key is call_id for faster lookup
 active_sessions: Dict[str, Dict[str, Any]] = {}
