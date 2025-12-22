@@ -460,7 +460,7 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
     await db.otp_sessions.insert_one(session_doc)
     
     await emit_log(session_id, "info", "🤖 Generating AI voices...")
-    await emit_log(session_id, "call", f"🚦 Call initiated")
+    await emit_log(session_id, "success", "✅ Call initiated")
     
     try:
         # Create outbound call
@@ -479,7 +479,7 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
                 {"$set": {"call_id": call_id, "status": "calling"}}
             )
             
-            await emit_log(session_id, "info", f"📞 Calling...")
+            await emit_log(session_id, "info", "📞 Calling...")
             
             # Start background task to play TTS after call is established
             # This handles the case where webhook doesn't arrive
