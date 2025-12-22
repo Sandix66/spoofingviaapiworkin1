@@ -264,11 +264,17 @@ async def get_call_status(call_id: str) -> dict:
     """Get call status from Infobip"""
     return await infobip_request("GET", f"/calls/1/calls/{call_id}")
 
+async def get_call_recording(call_id: str) -> dict:
+    """Get call recording from Infobip"""
+    return await infobip_request("GET", f"/calls/1/recordings/calls/{call_id}")
+
 async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
     """Wait for call to be established then play Step 1"""
     try:
         # Wait for call to be answered (poll status)
         max_attempts = 30  # 30 seconds max wait
+        ringing_logged = False
+        
         for attempt in range(max_attempts):
             await asyncio.sleep(1)
             
@@ -278,14 +284,26 @@ async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
                 call_state = result["data"].get("state", "")
                 logger.info(f"Call {call_id} state: {call_state}")
                 
+                # Log ringing state
+                if call_state == "CALLING" and not ringing_logged:
+                    await emit_log(session_id, "ringing", "📞 Ringing...")
+                    ringing_logged = True
+                
                 if call_state == "ESTABLISHED":
-                    # Call answered - play Step 1
-                    await emit_log(session_id, "success", "✅ Call Answered")
+                    # Call answered
+                    await emit_log(session_id, "answered", "🤳 Call Answered")
+                    
+                    # Check AMD result (if available)
+                    amd_result = result["data"].get("machineDetection", {}).get("detectionResult")
+                    if amd_result:
+                        await emit_log(session_id, "amd", f"👤 AMD Detection: {amd_result}", {"result": amd_result})
+                    else:
+                        await emit_log(session_id, "amd", "👤 AMD Detection: HUMAN", {"result": "HUMAN"})
                     
                     # Update status
                     await db.otp_sessions.update_one(
                         {"id": session_id},
-                        {"$set": {"status": "step1", "current_step": 1}}
+                        {"$set": {"status": "step1", "current_step": 1, "amd_result": amd_result or "HUMAN"}}
                     )
                     active_sessions[session_id]["current_step"] = 1
                     active_sessions[session_id]["status"] = "step1"
@@ -301,17 +319,50 @@ async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
                     await emit_log(session_id, "info", "⏳ Waiting for user input (1 or 0)...")
                     await start_dtmf_capture(call_id, max_length=1, timeout=30)
                     return
+                
+                elif call_state == "BUSY":
+                    await emit_log(session_id, "busy", "📵 Line Busy")
+                    await db.otp_sessions.update_one(
+                        {"id": session_id},
+                        {"$set": {"status": "busy"}}
+                    )
+                    return
                     
                 elif call_state in ["FINISHED", "FAILED", "HANGUP"]:
-                    await emit_log(session_id, "info", f"📴 Call ended: {call_state}")
+                    error_code = result["data"].get("errorCode", {})
+                    error_name = error_code.get("name", "UNKNOWN")
+                    
+                    if error_name == "NO_ANSWER":
+                        await emit_log(session_id, "no_answer", "📵 No Answer")
+                    elif error_name == "USER_BUSY":
+                        await emit_log(session_id, "busy", "📵 Line Busy")
+                    elif error_name == "CALL_REJECTED":
+                        await emit_log(session_id, "rejected", "📴 Call Rejected")
+                    else:
+                        await emit_log(session_id, "info", f"📴 Call ended: {error_name}")
+                    
                     await db.otp_sessions.update_one(
                         {"id": session_id},
                         {"$set": {"status": "completed"}}
                     )
+                    
+                    # Try to get recording
+                    await asyncio.sleep(2)
+                    recording = await get_call_recording(call_id)
+                    if recording["status_code"] == 200:
+                        recordings = recording["data"].get("recordings", [])
+                        if recordings:
+                            recording_url = recordings[0].get("url")
+                            if recording_url:
+                                await emit_log(session_id, "recording", "🎤 Recording available", {"url": recording_url})
+                                await db.otp_sessions.update_one(
+                                    {"id": session_id},
+                                    {"$set": {"recording_url": recording_url}}
+                                )
                     return
                     
         logger.warning(f"Call {call_id} did not connect after {max_attempts} attempts")
-        await emit_log(session_id, "warning", "⏱️ Call not answered - timeout")
+        await emit_log(session_id, "no_answer", "📵 No Answer - Timeout")
         
     except Exception as e:
         logger.error(f"Error in wait_and_play_step1: {e}", exc_info=True)
