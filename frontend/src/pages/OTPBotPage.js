@@ -147,14 +147,18 @@ const OTPBotPage = () => {
                 }
                 
                 // Handle recording URL
-                if (log.type === 'recording' && log.data?.url) {
+                if (log.type === 'recording' && log.data?.fileId) {
+                    // Use our proxy endpoint to download the recording
+                    const recordingDownloadUrl = `${API}/otp/recording/download/${log.data.fileId}`;
+                    setRecordingUrl(recordingDownloadUrl);
+                } else if (log.type === 'recording' && log.data?.url) {
                     setRecordingUrl(log.data.url);
                 }
                 
                 // Handle call completed
-                if (log.type === 'success' && log.message.includes('completed')) {
+                if (log.type === 'info' && log.message.includes('Call ended')) {
                     setIsCallActive(false);
-                    setCurrentStep(0);
+                    setSessionStatus('Completed');
                 }
                 
                 // Update status based on log type
