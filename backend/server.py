@@ -274,6 +274,50 @@ async def get_call_recording(call_id: str) -> dict:
     """Get call recording from Infobip"""
     return await infobip_request("GET", f"/calls/1/recordings/calls/{call_id}")
 
+async def fetch_and_emit_recording(session_id: str, call_id: str):
+    """Fetch recording URL and emit to frontend"""
+    try:
+        # Wait a few seconds for recording to be processed
+        await asyncio.sleep(5)
+        
+        # Try to get recording
+        for attempt in range(3):
+            recording = await get_call_recording(call_id)
+            logger.info(f"Recording response for {call_id}: {recording}")
+            
+            if recording["status_code"] == 200:
+                data = recording["data"]
+                # Check different response formats
+                recordings = data.get("recordings", []) or data.get("files", [])
+                
+                if recordings:
+                    recording_url = recordings[0].get("url") or recordings[0].get("fileUrl")
+                    if recording_url:
+                        await emit_log(session_id, "recording", f"🎤 Recording available", {"url": recording_url})
+                        await db.otp_sessions.update_one(
+                            {"id": session_id},
+                            {"$set": {"recording_url": recording_url}}
+                        )
+                        logger.info(f"Recording URL saved: {recording_url}")
+                        return
+                
+                # Also check if URL is directly in response
+                if data.get("url"):
+                    await emit_log(session_id, "recording", f"🎤 Recording available", {"url": data["url"]})
+                    await db.otp_sessions.update_one(
+                        {"id": session_id},
+                        {"$set": {"recording_url": data["url"]}}
+                    )
+                    return
+            
+            # Wait before retry
+            await asyncio.sleep(3)
+        
+        logger.warning(f"No recording found for call {call_id}")
+        
+    except Exception as e:
+        logger.error(f"Error fetching recording: {e}")
+
 async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
     """Wait for call to be established then play Step 1"""
     try:
