@@ -938,17 +938,22 @@ async def download_recording(file_id: str, current_user: dict = Depends(get_curr
     try:
         import httpx
         
+        download_url = f"{INFOBIP_BASE_URL}/calls/1/recordings/files/{file_id}"
+        logger.info(f"Downloading recording from: {download_url}")
+        
         headers = {
             "Authorization": f"App {INFOBIP_API_KEY}",
             "Accept": "audio/wav"
         }
         
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.get(
-                f"{INFOBIP_BASE_URL}/calls/1/recordings/files/{file_id}",
+                download_url,
                 headers=headers,
                 follow_redirects=True
             )
+            
+            logger.info(f"Recording download response: {response.status_code}")
             
             if response.status_code == 200:
                 from fastapi.responses import Response
@@ -960,6 +965,7 @@ async def download_recording(file_id: str, current_user: dict = Depends(get_curr
                     }
                 )
             else:
+                logger.error(f"Failed to download recording: {response.status_code} - {response.text}")
                 raise HTTPException(status_code=response.status_code, detail="Failed to download recording")
     except Exception as e:
         logger.error(f"Error downloading recording: {e}")
