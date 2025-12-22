@@ -46,14 +46,14 @@ security = HTTPBearer()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Socket.IO for real-time updates
+# Socket.IO for real-time updates - use /api/socket.io path for ingress routing
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 
 # Create FastAPI app
 fastapi_app = FastAPI(title="OTP Bot Call API", version="2.0.0")
 
-# Create Socket.IO ASGI app - this wraps FastAPI
-app = socketio.ASGIApp(sio, fastapi_app)
+# Create Socket.IO ASGI app with custom path that works with ingress
+app = socketio.ASGIApp(sio, fastapi_app, socketio_path='/api/socket.io')
 
 # Store active sessions - key is call_id for faster lookup
 active_sessions: Dict[str, Dict[str, Any]] = {}
