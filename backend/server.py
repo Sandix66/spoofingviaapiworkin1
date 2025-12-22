@@ -669,9 +669,13 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
         step2_text = session["messages"]["step2"]
         result = await play_tts(call_id, step2_text, session.get("language", "en"))
         logger.info(f"Step 2 TTS result: {result}")
-        # DTMF capture will be started after SAY_FINISHED event
         
-    elif current_step == 2 and status == "step2":
+        # Wait for TTS to finish then start DTMF capture for OTP
+        await asyncio.sleep(6)
+        await emit_log(session_id, "info", f"⏳ Waiting for {otp_digits}-digit OTP...")
+        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=60)
+        
+    elif current_step == 2 and status in ["step2", "waiting_pin"]:
         # Step 2: Collecting OTP digits
         otp_code = dtmf_value.replace("#", "").replace("*", "")
         
