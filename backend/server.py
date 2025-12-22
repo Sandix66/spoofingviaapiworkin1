@@ -374,6 +374,10 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
             
             await emit_log(session_id, "info", f"📞 Calling...")
             
+            # Start background task to play TTS after call is established
+            # This handles the case where webhook doesn't arrive
+            asyncio.create_task(wait_and_play_step1(session_id, session_doc, call_id))
+            
             return {
                 "session_id": session_id,
                 "call_id": call_id,
