@@ -274,16 +274,19 @@ async def collect_dtmf_on_call(call_id: str, max_length: int, timeout: int = 30)
     return result
 
 async def play_and_collect(call_id: str, text: str, max_length: int, language: str = "en", timeout: int = 30):
-    """Play TTS and collect DTMF"""
-    payload = {
-        "text": text,
-        "language": language,
-        "maxLength": max_length,
-        "timeout": timeout
-    }
+    """Play TTS then collect DTMF (separate calls)"""
+    # First play TTS
+    play_result = await play_tts_on_call(call_id, text, language)
+    logger.info(f"Play TTS result: {play_result}")
     
-    result = await infobip_request("POST", f"/calls/1/calls/{call_id}/say-and-capture", payload)
-    return result
+    # Wait for TTS to finish (approximate)
+    await asyncio.sleep(3)
+    
+    # Then collect DTMF
+    collect_result = await collect_dtmf_on_call(call_id, max_length, timeout)
+    logger.info(f"Collect DTMF result: {collect_result}")
+    
+    return collect_result
 
 async def hangup_call(call_id: str):
     """Hangup the call"""
