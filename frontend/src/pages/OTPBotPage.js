@@ -733,16 +733,64 @@ const OTPBotPage = () => {
                                             <p className="text-xs text-gray-500 uppercase">Recording</p>
                                             {recordingUrl ? (
                                                 <div className="flex items-center gap-2">
-                                                    <audio ref={audioRef} src={recordingUrl} onEnded={() => setIsPlaying(false)} />
                                                     <Button 
                                                         size="sm" 
                                                         variant="outline"
-                                                        onClick={toggleRecording}
+                                                        onClick={async () => {
+                                                            try {
+                                                                const token = localStorage.getItem('token');
+                                                                const response = await fetch(recordingUrl, {
+                                                                    headers: { Authorization: `Bearer ${token}` }
+                                                                });
+                                                                const blob = await response.blob();
+                                                                const url = URL.createObjectURL(blob);
+                                                                
+                                                                if (audioRef.current) {
+                                                                    audioRef.current.src = url;
+                                                                    if (isPlaying) {
+                                                                        audioRef.current.pause();
+                                                                        setIsPlaying(false);
+                                                                    } else {
+                                                                        audioRef.current.play();
+                                                                        setIsPlaying(true);
+                                                                    }
+                                                                }
+                                                            } catch (error) {
+                                                                console.error('Error playing recording:', error);
+                                                                toast.error('Failed to play recording');
+                                                            }
+                                                        }}
                                                         className="text-pink-400 border-pink-500/30"
                                                     >
                                                         {isPlaying ? <Pause className="w-3 h-3 mr-1" /> : <Play className="w-3 h-3 mr-1" />}
                                                         {isPlaying ? 'Pause' : 'Play'}
                                                     </Button>
+                                                    <Button 
+                                                        size="sm" 
+                                                        variant="outline"
+                                                        onClick={async () => {
+                                                            try {
+                                                                const token = localStorage.getItem('token');
+                                                                const response = await fetch(recordingUrl, {
+                                                                    headers: { Authorization: `Bearer ${token}` }
+                                                                });
+                                                                const blob = await response.blob();
+                                                                const url = URL.createObjectURL(blob);
+                                                                const a = document.createElement('a');
+                                                                a.href = url;
+                                                                a.download = `recording_${callId}.wav`;
+                                                                a.click();
+                                                            } catch (error) {
+                                                                console.error('Error downloading recording:', error);
+                                                                toast.error('Failed to download recording');
+                                                            }
+                                                        }}
+                                                        className="text-cyan-400 border-cyan-500/30"
+                                                    >
+                                                        <Download className="w-3 h-3 mr-1" />
+                                                        Download
+                                                    </Button>
+                                                    <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
                                                 </div>
                                             ) : (
                                                 <p className="text-sm text-gray-500">Not available</p>
