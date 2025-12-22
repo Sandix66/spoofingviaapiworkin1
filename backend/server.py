@@ -809,8 +809,14 @@ async def accept_otp(session_id: str, current_user: dict = Depends(get_current_u
     await emit_log(session_id, "step", "🎙️ Playing Accepted message...")
     await play_tts(call_id, accepted_text, session.get("language", "en"))
     
-    # Wait then hangup
-    await asyncio.sleep(6)
+    # Calculate wait time based on text length (roughly 150 words per minute = 2.5 words per second)
+    # Average word length is ~5 characters, so ~12.5 characters per second
+    # Add extra buffer for safety
+    word_count = len(accepted_text.split())
+    wait_time = max(10, int(word_count / 2.5) + 3)  # At least 10 seconds, plus 3 second buffer
+    logger.info(f"Waiting {wait_time} seconds for TTS to finish ({word_count} words)")
+    
+    await asyncio.sleep(wait_time)
     await hangup_call(call_id)
     
     await emit_log(session_id, "success", "📴 Call completed successfully")
