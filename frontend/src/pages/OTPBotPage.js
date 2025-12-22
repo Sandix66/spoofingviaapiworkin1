@@ -116,7 +116,7 @@ const OTPBotPage = () => {
             console.log('Connecting to Socket.IO at:', BACKEND_URL);
             const newSocket = io(BACKEND_URL, {
                 transports: ['websocket', 'polling'],
-                path: '/socket.io/',
+                path: '/api/socket.io/',
                 reconnection: true,
                 reconnectionAttempts: 5,
                 reconnectionDelay: 1000,
