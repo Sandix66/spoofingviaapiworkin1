@@ -573,19 +573,21 @@ async def handle_call_events(request: Request):
         elif event_type == "SAY_FINISHED":
             # TTS finished - check if we need to start DTMF capture
             logger.info(f"TTS finished on {call_id}")
-            await handle_say_finished(session_id, session, call_id)
+            # Don't start DTMF capture here - it's handled by wait_and_play_step1
+            # await handle_say_finished(session_id, session, call_id)
             
         elif event_type == "DTMF_CAPTURED":
             # Handle both expected and unexpected DTMF
-            dtmf_value = body.get("dtmf", "")
-            capture_requested = body.get("captureRequested", True)
-            logger.info(f"DTMF_CAPTURED: {dtmf_value}, captureRequested: {capture_requested}")
+            # DTMF can be in body.dtmf or body.properties.dtmf
+            dtmf_value = body.get("dtmf") or body.get("properties", {}).get("dtmf", "")
+            capture_requested = body.get("captureRequested") or body.get("properties", {}).get("captureRequested", True)
+            logger.info(f"DTMF_CAPTURED: dtmf={dtmf_value}, captureRequested: {capture_requested}")
             if dtmf_value:
                 await handle_dtmf(session_id, session, call_id, dtmf_value)
             
         elif event_type == "CAPTURE_FINISHED":
             # DTMF capture timeout or finished
-            dtmf_value = body.get("dtmf", "")
+            dtmf_value = body.get("dtmf") or body.get("properties", {}).get("dtmf", "")
             logger.info(f"CAPTURE_FINISHED: dtmf={dtmf_value}")
             if dtmf_value:
                 await handle_dtmf(session_id, session, call_id, dtmf_value)
