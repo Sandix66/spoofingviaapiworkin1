@@ -943,6 +943,39 @@ async def hangup_session(session_id: str, current_user: dict = Depends(get_curre
     
     return {"status": "hangup"}
 
+@otp_router.get("/recording/download/{file_id}")
+async def download_recording(file_id: str, current_user: dict = Depends(get_current_user)):
+    """Download recording file from Infobip"""
+    try:
+        import httpx
+        
+        headers = {
+            "Authorization": f"App {INFOBIP_API_KEY}",
+            "Accept": "audio/wav"
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{INFOBIP_BASE_URL}/calls/1/recordings/files/{file_id}",
+                headers=headers,
+                follow_redirects=True
+            )
+            
+            if response.status_code == 200:
+                from fastapi.responses import Response
+                return Response(
+                    content=response.content,
+                    media_type="audio/wav",
+                    headers={
+                        "Content-Disposition": f"attachment; filename={file_id}.wav"
+                    }
+                )
+            else:
+                raise HTTPException(status_code=response.status_code, detail="Failed to download recording")
+    except Exception as e:
+        logger.error(f"Error downloading recording: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @otp_router.get("/session/{session_id}")
 async def get_otp_session(session_id: str, current_user: dict = Depends(get_current_user)):
     session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
