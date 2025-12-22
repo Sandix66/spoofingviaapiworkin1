@@ -558,6 +558,10 @@ async def handle_call_events(request: Request):
         elif event_type == "CALL_FINISHED":
             reason = body.get("errorCode", {}).get("name", "completed")
             await emit_log(session_id, "info", f"📴 Call ended: {reason}")
+            
+            # Try to get recording URL
+            asyncio.create_task(fetch_and_emit_recording(session_id, call_id))
+            
             await db.otp_sessions.update_one(
                 {"id": session_id},
                 {"$set": {"status": "completed"}}
