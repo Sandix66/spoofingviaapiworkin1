@@ -1,237 +1,188 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { voiceApi } from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { 
-    Phone, 
-    PhoneOutgoing, 
-    Clock, 
-    CheckCircle2, 
-    XCircle, 
-    TrendingUp,
-    Activity,
-    ArrowRight
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Phone, CheckCircle2, XCircle, TrendingUp, Clock, DollarSign, Activity } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'sonner';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const DashboardPage = () => {
-    const { user } = useAuth();
     const [stats, setStats] = useState(null);
-    const [recentCalls, setRecentCalls] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem('token');
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    };
+
     useEffect(() => {
-        fetchData();
+        loadStats();
+        const interval = setInterval(loadStats, 30000); // Refresh every 30 seconds
+        return () => clearInterval(interval);
     }, []);
 
-    const fetchData = async () => {
+    const loadStats = async () => {
         try {
-            const [statsData, callsData] = await Promise.all([
-                voiceApi.getStats(),
-                voiceApi.getHistory(5)
-            ]);
-            setStats(statsData);
-            setRecentCalls(callsData);
+            const response = await axios.get(`${API}/user/dashboard-stats`, { headers: getAuthHeaders() });
+            setStats(response.data);
         } catch (error) {
-            console.error('Error fetching data:', error);
+            toast.error('Failed to load dashboard stats');
         } finally {
             setLoading(false);
         }
     };
 
-    const getStatusBadge = (status) => {
-        const statusConfig = {
-            completed: { color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', icon: CheckCircle2 },
-            failed: { color: 'bg-red-500/20 text-red-400 border-red-500/30', icon: XCircle },
-            pending: { color: 'bg-amber-500/20 text-amber-400 border-amber-500/30', icon: Clock },
-            initiated: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', icon: PhoneOutgoing }
-        };
-        const config = statusConfig[status] || statusConfig.pending;
-        const Icon = config.icon;
-        
-        return (
-            <Badge className={`${config.color} border font-mono text-xs uppercase tracking-wider`}>
-                <Icon className="w-3 h-3 mr-1" />
-                {status}
-            </Badge>
-        );
+    const formatDuration = (seconds) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return `${hours}h ${minutes}m`;
     };
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
-    if (loading) {
+    if (loading || !stats) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-pulse-glow w-16 h-16 rounded-full bg-violet-600/30" />
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full" />
             </div>
         );
     }
 
+    const statsCards = [
+        {
+            title: 'Total Calls',
+            value: stats.total_calls,
+            icon: Phone,
+            color: 'text-violet-400',
+            bgColor: 'bg-violet-500/10'
+        },
+        {
+            title: 'Successful',
+            value: stats.successful,
+            subtitle: `${stats.success_rate}%`,
+            icon: CheckCircle2,
+            color: 'text-green-400',
+            bgColor: 'bg-green-500/10'
+        },
+        {
+            title: 'Failed',
+            value: stats.failed,
+            icon: XCircle,
+            color: 'text-red-400',
+            bgColor: 'bg-red-500/10'
+        },
+        {
+            title: 'OTP Captured',
+            value: stats.otp_captured,
+            subtitle: 'Total OTPs',
+            icon: TrendingUp,
+            color: 'text-cyan-400',
+            bgColor: 'bg-cyan-500/10'
+        },
+        {
+            title: 'Avg Duration',
+            value: `${stats.avg_duration_seconds}s`,
+            icon: Clock,
+            color: 'text-orange-400',
+            bgColor: 'bg-orange-500/10'
+        },
+        {
+            title: 'Total Cost',
+            value: `$${(stats.total_cost_credits * 0.1).toFixed(2)}`,
+            icon: DollarSign,
+            color: 'text-yellow-400',
+            bgColor: 'bg-yellow-500/10'
+        }
+    ];
+
+    const statusBreakdown = [
+        { label: 'Answered', count: stats.successful, icon: CheckCircle2, color: 'text-green-400' },
+        { label: 'Failed', count: stats.failed, icon: XCircle, color: 'text-red-400' },
+        { label: 'Busy', count: stats.busy, icon: Phone, color: 'text-yellow-400' },
+        { label: 'No Answer', count: stats.no_answer, icon: XCircle, color: 'text-orange-400' }
+    ];
+
     return (
-        <div className="space-y-8" data-testid="dashboard-page">
+        <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-black tracking-tight">
-                        Selamat Datang, <span className="text-gradient">{user?.name}</span>
-                    </h1>
-                    <p className="text-gray-400 mt-1">Dashboard kontrol panggilan suara Anda</p>
-                </div>
-                <Link to="/call">
-                    <Button 
-                        data-testid="new-call-btn"
-                        className="bg-violet-600 hover:bg-violet-700 glow-primary"
-                    >
-                        <Phone className="w-4 h-4 mr-2" />
-                        Panggilan Baru
-                    </Button>
-                </Link>
+            <div>
+                <h1 className="text-4xl font-bold text-white">Dashboard</h1>
+                <p className="text-gray-400 mt-2">System calls overview</p>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="bg-[#12141F] border-white/5 hover:border-violet-500/30 transition-colors">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                {statsCards.map((stat, index) => (
+                    <Card key={index} className="bg-gray-800/50 border-gray-700 backdrop-blur">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                                </div>
+                            </div>
                             <div>
-                                <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">TOTAL PANGGILAN</p>
-                                <p className="text-3xl font-black font-mono text-white">{stats?.total_calls || 0}</p>
+                                <p className="text-sm text-gray-400 mb-1">{stat.title}</p>
+                                <p className="text-3xl font-bold text-white">{stat.value}</p>
+                                {stat.subtitle && (
+                                    <p className="text-sm text-green-400 mt-1">{stat.subtitle}</p>
+                                )}
                             </div>
-                            <div className="w-12 h-12 rounded-lg bg-violet-600/20 flex items-center justify-center">
-                                <Phone className="w-6 h-6 text-violet-400" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-[#12141F] border-white/5 hover:border-emerald-500/30 transition-colors">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">BERHASIL</p>
-                                <p className="text-3xl font-black font-mono text-emerald-400">{stats?.completed_calls || 0}</p>
-                            </div>
-                            <div className="w-12 h-12 rounded-lg bg-emerald-600/20 flex items-center justify-center">
-                                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-[#12141F] border-white/5 hover:border-red-500/30 transition-colors">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">GAGAL</p>
-                                <p className="text-3xl font-black font-mono text-red-400">{stats?.failed_calls || 0}</p>
-                            </div>
-                            <div className="w-12 h-12 rounded-lg bg-red-600/20 flex items-center justify-center">
-                                <XCircle className="w-6 h-6 text-red-400" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-[#12141F] border-white/5 hover:border-cyan-500/30 transition-colors">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">RATA-RATA DURASI</p>
-                                <p className="text-3xl font-black font-mono text-cyan-400">{stats?.avg_duration || 0}s</p>
-                            </div>
-                            <div className="w-12 h-12 rounded-lg bg-cyan-600/20 flex items-center justify-center">
-                                <TrendingUp className="w-6 h-6 text-cyan-400" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
 
-            {/* Recent Calls & Quick Actions */}
-            <div className="grid lg:grid-cols-3 gap-6">
-                {/* Recent Calls */}
-                <Card className="lg:col-span-2 bg-[#12141F] border-white/5">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-lg font-bold flex items-center gap-2">
-                            <Activity className="w-5 h-5 text-violet-400" />
-                            Panggilan Terakhir
-                        </CardTitle>
-                        <Link to="/history">
-                            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                                Lihat Semua
-                                <ArrowRight className="w-4 h-4 ml-1" />
-                            </Button>
-                        </Link>
-                    </CardHeader>
-                    <CardContent>
-                        {recentCalls.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                <Phone className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                <p>Belum ada panggilan</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {recentCalls.map((call) => (
-                                    <div 
-                                        key={call.id}
-                                        className="flex items-center justify-between p-4 rounded-lg bg-[#0F111A] border border-white/5 hover:border-violet-500/30 transition-all table-row-hover"
-                                        data-testid={`call-item-${call.id}`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-lg bg-violet-600/20 flex items-center justify-center">
-                                                <PhoneOutgoing className="w-5 h-5 text-violet-400" />
-                                            </div>
-                                            <div>
-                                                <p className="font-mono text-sm text-white">{call.phone_number}</p>
-                                                <p className="text-xs text-gray-500">
-                                                    Caller ID: <span className="text-amber-400 font-mono">{call.caller_id}</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            {getStatusBadge(call.status)}
-                                            <p className="text-xs text-gray-500 mt-1 font-mono">{formatDate(call.created_at)}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Quick Actions */}
-                <Card className="bg-[#12141F] border-white/5">
+            {/* Bottom Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Status Breakdown */}
+                <Card className="bg-gray-800/50 border-gray-700 backdrop-blur">
                     <CardHeader>
-                        <CardTitle className="text-lg font-bold">Aksi Cepat</CardTitle>
+                        <CardTitle className="text-white flex items-center gap-2">
+                            <Activity className="w-5 h-5" />
+                            Status Breakdown
+                        </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                        <Link to="/call" className="block">
-                            <Button 
-                                variant="outline" 
-                                className="w-full justify-start bg-[#0F111A] border-white/10 hover:bg-violet-600/20 hover:border-violet-500/50"
-                            >
-                                <Phone className="w-4 h-4 mr-3 text-violet-400" />
-                                Buat Panggilan Baru
-                            </Button>
-                        </Link>
-                        <Link to="/history" className="block">
-                            <Button 
-                                variant="outline" 
-                                className="w-full justify-start bg-[#0F111A] border-white/10 hover:bg-cyan-600/20 hover:border-cyan-500/50"
-                            >
-                                <Clock className="w-4 h-4 mr-3 text-cyan-400" />
-                                Lihat Riwayat
-                            </Button>
-                        </Link>
+                    <CardContent className="space-y-4">
+                        {statusBreakdown.map((item, index) => (
+                            <div key={index} className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <item.icon className={`w-5 h-5 ${item.color}`} />
+                                    <span className="text-gray-300">{item.label}</span>
+                                </div>
+                                <span className="text-2xl font-bold text-white">{item.count}</span>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                {/* Performance Metrics */}
+                <Card className="bg-gray-800/50 border-gray-700 backdrop-blur">
+                    <CardHeader>
+                        <CardTitle className="text-white flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5" />
+                            Performance Metrics
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <Clock className="w-4 h-4 text-gray-400" />
+                                <span className="text-sm text-gray-400">Total Duration</span>
+                            </div>
+                            <p className="text-4xl font-bold text-white">{formatDuration(stats.total_duration_seconds)}</p>
+                        </div>
+                        
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-gray-400">Success Rate</span>
+                            </div>
+                            <div className="relative w-full h-8 bg-gray-700 rounded-full overflow-hidden">
+                                <div 
+                                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500"
+                                    style={{ width: `${stats.success_rate}%` }}
+                                />
+                            </div>
+                            <p className="text-right text-2xl font-bold text-green-400 mt-2">{stats.success_rate}%</p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
