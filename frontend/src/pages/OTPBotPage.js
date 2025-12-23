@@ -160,6 +160,8 @@ const OTPBotPage = () => {
     });
 
     const [activeStep, setActiveStep] = useState('step1');
+    const [selectedTemplate, setSelectedTemplate] = useState('login_verification');
+
 
     // Scroll to bottom on new logs
     useEffect(() => {
