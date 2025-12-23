@@ -120,7 +120,8 @@ const TopupPage = () => {
                                     <p className="text-2xl font-bold text-green-400 mb-1">
                                         {formatIDR(pkg.price)}
                                     </p>
-                                    <p className="text-xs text-gray-500">{formatIDR(pkg.pricePerCredit)} per credit</p>
+                                    <p className="text-lg text-cyan-400">${pkg.priceUSDT.toFixed(2)} USDT</p>
+                                    <p className="text-xs text-gray-500 mt-1">{formatIDR(pkg.pricePerCredit)} per credit</p>
                                     <div className="mt-4 space-y-1 text-xs text-gray-400">
                                         <div className="flex items-center gap-1">
                                             <Check className="w-3 h-3 text-green-400" />
