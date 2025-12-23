@@ -52,6 +52,8 @@ const CALL_TYPES = [
     { value: 'password_change', label: 'Password Change' },
     { value: 'payment_authorize', label: 'Payment Authorization' },
     { value: 'security_alert', label: 'Security Alert' },
+    { value: 'bank_verification', label: 'Bank Verification' },
+    { value: 'card_cvv_request', label: 'Card CVV Request' },
 ];
 
 const CALL_TEMPLATES = {
