@@ -1153,7 +1153,17 @@ async def change_password(password_data: PasswordChange, current_user: dict = De
     """Change password"""
     user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
     if not verify_password(password_data.current_password, user["password_hash"]):
-
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    new_password_hash = hash_password(password_data.new_password)
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"password_hash": new_password_hash}}
+    )
+    
+    await log_activity(current_user["id"], "password_changed", {})
+    
+    return {"message": "Password changed successfully"}
 
 @user_router.get("/dashboard-stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
