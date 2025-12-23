@@ -286,12 +286,21 @@ async def play_tts(call_id: str, text: str, language: str = "en", session_id: st
     
     else:
         # For ElevenLabs/Deepgram - check if pre-generated audio exists
-        # Try to match text with pre-generated messages
+        # Match text with pre-generated messages
         audio_url = None
-        for msg_type, url in audio_urls.items():
-            # Audio URLs are keyed by message type (step1, step2, etc)
-            audio_url = url
-            break  # Use first available for now - will improve matching
+        
+        if audio_urls:
+            # Try to match by text content
+            session_messages = {}
+            if session_id and session_id in active_sessions:
+                session_messages = active_sessions[session_id].get("messages", {})
+            
+            # Match text with message type
+            for msg_type in ["step1", "step2", "step3", "accepted", "rejected"]:
+                if msg_type in session_messages and session_messages[msg_type] == text:
+                    audio_url = audio_urls.get(msg_type)
+                    logger.info(f"Matched text to message type: {msg_type}")
+                    break
         
         if audio_url:
             # Use pre-generated audio
@@ -300,7 +309,7 @@ async def play_tts(call_id: str, text: str, language: str = "en", session_id: st
             return await infobip_request("POST", f"/calls/1/calls/{call_id}/play-file", payload)
         else:
             # No pre-generated audio - fallback to Infobip
-            logger.warning(f"No pre-generated audio found, using Infobip fallback")
+            logger.warning(f"No pre-generated audio for this message, using Infobip fallback")
             payload = {"text": text, "language": language}
             return await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
     logger.info(f"Playing TTS on {call_id}: {text[:50]}...")
