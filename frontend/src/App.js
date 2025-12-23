@@ -63,6 +63,15 @@ function AppRoutes() {
                 } 
             />
             <Route 
+                path="/register" 
+                element={
+                    <PublicRoute>
+                        <RegisterPage />
+                    </PublicRoute>
+                } 
+            />
+
+            <Route 
                 path="/dashboard" 
                 element={
                     <ProtectedRoute>
