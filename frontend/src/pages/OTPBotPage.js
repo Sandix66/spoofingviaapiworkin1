@@ -94,6 +94,7 @@ const VOICE_MODELS = [
     { value: 'aura-stella-en', label: '🌊 Stella (Deepgram - Female, Bright)', provider: 'deepgram' },
     { value: 'aura-athena-en', label: '🌊 Athena (Deepgram - Female, Authoritative)', provider: 'deepgram' },
     { value: 'aura-hera-en', label: '🌊 Hera (Deepgram - Female, Mature)', provider: 'deepgram' },
+    { value: 'aura-2-andromeda-en', label: '🌊 Andromeda (Deepgram - Female, American)', provider: 'deepgram' },
     { value: 'aura-orion-en', label: '🌊 Orion (Deepgram - Male, Deep)', provider: 'deepgram' },
     { value: 'aura-arcas-en', label: '🌊 Arcas (Deepgram - Male, Professional)', provider: 'deepgram' },
     { value: 'aura-perseus-en', label: '🌊 Perseus (Deepgram - Male, Confident)', provider: 'deepgram' },
