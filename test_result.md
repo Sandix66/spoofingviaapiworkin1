@@ -223,13 +223,11 @@ frontend:
 metadata:
   created_by: "main_agent"
   version: "2.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Request Additional Info - Email OTP, SSN, DOB, CVV (Backend)"
-    - "Request Info Buttons - Email OTP, SSN, DOB, CVV (Frontend)"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
