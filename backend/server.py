@@ -99,6 +99,14 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+    invitation_code: str
+
+
 class UserResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
