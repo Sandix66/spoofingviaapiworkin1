@@ -20,16 +20,16 @@ const TopupPage = () => {
     };
 
     const creditPackages = [
-        { id: 'credit_100k', credits: 62, price: 100000, pricePerCredit: 1613 },
-        { id: 'credit_200k', credits: 125, price: 200000, pricePerCredit: 1600 },
-        { id: 'credit_300k', credits: 187, price: 300000, pricePerCredit: 1604 },
-        { id: 'credit_400k', credits: 250, price: 400000, pricePerCredit: 1600 },
-        { id: 'credit_500k', credits: 312, price: 500000, pricePerCredit: 1603, popular: true },
-        { id: 'credit_600k', credits: 375, price: 600000, pricePerCredit: 1600 },
-        { id: 'credit_700k', credits: 437, price: 700000, pricePerCredit: 1602 },
-        { id: 'credit_800k', credits: 500, price: 800000, pricePerCredit: 1600 },
-        { id: 'credit_900k', credits: 562, price: 900000, pricePerCredit: 1601 },
-        { id: 'credit_1jt', credits: 625, price: 1000000, pricePerCredit: 1600 }
+        { id: 'credit_100k', credits: 62, price: 100000, pricePerCredit: 1613, priceUSDT: 6.33 },
+        { id: 'credit_200k', credits: 125, price: 200000, pricePerCredit: 1600, priceUSDT: 12.66 },
+        { id: 'credit_300k', credits: 187, price: 300000, pricePerCredit: 1604, priceUSDT: 18.99 },
+        { id: 'credit_400k', credits: 250, price: 400000, pricePerCredit: 1600, priceUSDT: 25.32 },
+        { id: 'credit_500k', credits: 312, price: 500000, pricePerCredit: 1603, popular: true, priceUSDT: 31.65 },
+        { id: 'credit_600k', credits: 375, price: 600000, pricePerCredit: 1600, priceUSDT: 37.97 },
+        { id: 'credit_700k', credits: 437, price: 700000, pricePerCredit: 1602, priceUSDT: 44.30 },
+        { id: 'credit_800k', credits: 500, price: 800000, pricePerCredit: 1600, priceUSDT: 50.63 },
+        { id: 'credit_900k', credits: 562, price: 900000, pricePerCredit: 1601, priceUSDT: 56.96 },
+        { id: 'credit_1jt', credits: 625, price: 1000000, pricePerCredit: 1600, priceUSDT: 63.29 }
     ];
 
     const planPackages = [
