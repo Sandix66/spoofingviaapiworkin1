@@ -1087,7 +1087,7 @@ async def user_generate_invite(current_user: dict = Depends(get_current_user)):
         "code": code,
         "created_by": current_user["id"],
         "created_by_role": "user",
-        "credits_for_new_user": 10,  # Default 10 credits for user-generated invites
+        "credits_for_new_user": 0,  # User-generated invites give 0 credits (only admin can give credits)
         "is_used": False,
         "used_by": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
