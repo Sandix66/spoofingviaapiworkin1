@@ -496,9 +496,6 @@ async def save_call_history(session_id: str, session: dict, call_id: str, status
     except Exception as e:
         logger.error(f"Error saving call history: {e}")
 
-    except Exception as e:
-        logger.error(f"Error fetching recording: {e}")
-
 async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
     """Wait for call to be established then play Step 1 with retry"""
     try:
