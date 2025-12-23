@@ -701,31 +701,6 @@ async def play_step3_retry_only(session_id: str, session: dict, call_id: str):
 
 # ==================== AUTH ROUTES ====================
 
-@auth_router.post("/register", response_model=TokenResponse)
-async def register(user_data: UserCreate):
-    existing_user = await db.users.find_one({"email": user_data.email})
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    user_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
-    
-    user_doc = {
-        "id": user_id,
-        "email": user_data.email,
-        "name": user_data.name,
-        "password_hash": hash_password(user_data.password),
-        "created_at": now
-    }
-    
-    await db.users.insert_one(user_doc)
-    access_token = create_access_token({"sub": user_id})
-    
-    return TokenResponse(
-        access_token=access_token,
-        user=UserResponse(id=user_id, email=user_data.email, name=user_data.name, created_at=now)
-    )
-
 @auth_router.post("/login", response_model=TokenResponse)
 async def login(credentials: UserLogin):
     user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
