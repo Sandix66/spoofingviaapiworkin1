@@ -311,9 +311,6 @@ const AdminPanel = () => {
                                     </div>
                                     <div className="space-y-1 text-xs">
                                         <p className="text-gray-400">
-                                            Credits: <span className="text-yellow-400 font-bold">{code.credits_for_new_user}</span>
-                                        </p>
-                                        <p className="text-gray-400">
                                             Status: {code.is_used ? (
                                                 <span className="text-red-400">Used</span>
                                             ) : (
