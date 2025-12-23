@@ -1229,18 +1229,6 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "success_rate": 0
     }
 
-        raise HTTPException(status_code=400, detail="Current password is incorrect")
-    
-    new_password_hash = hash_password(password_data.new_password)
-    await db.users.update_one(
-        {"id": current_user["id"]},
-        {"$set": {"password_hash": new_password_hash}}
-    )
-    
-    await log_activity(current_user["id"], "password_changed", {})
-    
-    return {"message": "Password changed successfully"}
-
 @user_router.get("/calls")
 async def get_user_calls(limit: int = 50, current_user: dict = Depends(get_current_user)):
     """Get user's own call history"""
