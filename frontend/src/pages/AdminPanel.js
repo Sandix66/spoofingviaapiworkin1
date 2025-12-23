@@ -296,6 +296,16 @@ const AdminPanel = () => {
                                                 </Button>
                                                 <Button
                                                     size="sm"
+                                                    onClick={() => {
+                                                        setSelectedUser(user);
+                                                        setIsPasswordDialogOpen(true);
+                                                    }}
+                                                    className="bg-purple-600 hover:bg-purple-700"
+                                                >
+                                                    <Key className="w-3 h-3" />
+                                                </Button>
+                                                <Button
+                                                    size="sm"
                                                     onClick={() => handleDeleteUser(user.id)}
                                                     className="bg-red-600 hover:bg-red-700"
                                                     disabled={user.role === 'admin'}
