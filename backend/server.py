@@ -682,8 +682,8 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
         "messages": {
             "step1": step1_text,
             "step2": step2_text,
-            "step3": config.step3_message,
-            "accepted": config.accepted_message,
+            "step3": step3_text,
+            "accepted": accepted_text,
             "rejected": rejected_text
         }
     }
