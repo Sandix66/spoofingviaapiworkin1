@@ -196,12 +196,12 @@ const HistoryPage = () => {
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="border-white/5 hover:bg-transparent">
-                                            <TableHead className="text-xs uppercase tracking-wider text-gray-500">Nomor Tujuan</TableHead>
-                                            <TableHead className="text-xs uppercase tracking-wider text-gray-500">Caller ID</TableHead>
-                                            <TableHead className="text-xs uppercase tracking-wider text-gray-500">Pesan</TableHead>
+                                            <TableHead className="text-xs uppercase tracking-wider text-gray-500">Recipient</TableHead>
+                                            <TableHead className="text-xs uppercase tracking-wider text-gray-500">Voice</TableHead>
                                             <TableHead className="text-xs uppercase tracking-wider text-gray-500">Status</TableHead>
-                                            <TableHead className="text-xs uppercase tracking-wider text-gray-500">Durasi</TableHead>
-                                            <TableHead className="text-xs uppercase tracking-wider text-gray-500">Tanggal</TableHead>
+                                            <TableHead className="text-xs uppercase tracking-wider text-gray-500">Duration</TableHead>
+                                            <TableHead className="text-xs uppercase tracking-wider text-gray-500">Cost</TableHead>
+                                            <TableHead className="text-xs uppercase tracking-wider text-gray-500">Date</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -212,19 +212,21 @@ const HistoryPage = () => {
                                                 data-testid={`history-row-${call.id}`}
                                             >
                                                 <TableCell className="font-mono text-sm text-white">
-                                                    {call.phone_number}
+                                                    {call.recipient_number}
                                                 </TableCell>
-                                                <TableCell className="font-mono text-sm text-amber-400">
-                                                    {call.caller_id}
-                                                </TableCell>
-                                                <TableCell className="max-w-[200px] truncate text-sm text-gray-400">
-                                                    {call.message_text}
+                                                <TableCell className="text-sm text-amber-400">
+                                                    {call.voice_provider === 'elevenlabs' && '⚡'}
+                                                    {call.voice_provider === 'deepgram' && '🌊'}
+                                                    {call.voice_provider === 'infobip' && '🎙️'}
                                                 </TableCell>
                                                 <TableCell>
                                                     {getStatusBadge(call.status)}
                                                 </TableCell>
                                                 <TableCell className="font-mono text-sm text-gray-400">
                                                     {call.duration_seconds ? `${call.duration_seconds}s` : '-'}
+                                                </TableCell>
+                                                <TableCell className="font-mono text-sm text-yellow-400">
+                                                    {call.cost_credits} credits
                                                 </TableCell>
                                                 <TableCell className="font-mono text-xs text-gray-500">
                                                     {formatDate(call.created_at)}
@@ -238,7 +240,7 @@ const HistoryPage = () => {
                             {/* Pagination */}
                             <div className="flex items-center justify-between p-4 border-t border-white/5">
                                 <p className="text-sm text-gray-500">
-                                    Halaman {page + 1} dari {totalPages || 1}
+                                    Page {page + 1} of {totalPages || 1}
                                 </p>
                                 <div className="flex gap-2">
                                     <Button
