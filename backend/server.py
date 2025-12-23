@@ -484,15 +484,9 @@ async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
                             return
                             
                         elif amd_result == "SILENCE":
-                            # Silence detected - end call
-                            await emit_log(session_id, "warning", "🔇 Silence detected - ending call")
-                            await db.otp_sessions.update_one(
-                                {"id": session_id},
-                                {"$set": {"status": "silence_detected", "amd_result": "SILENCE"}}
-                            )
-                            await asyncio.sleep(3)
-                            await hangup_call(call_id)
-                            return
+                            # Silence detected - continue anyway (might be human who's quiet)
+                            await emit_log(session_id, "warning", "🔇 Silence detected - continuing call")
+                            # Don't hangup, continue normal flow
                             
                         elif amd_result == "FAX":
                             # Fax machine detected
