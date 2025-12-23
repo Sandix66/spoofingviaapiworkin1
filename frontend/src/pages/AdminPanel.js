@@ -159,6 +159,27 @@ const AdminPanel = () => {
 
 
 
+    const handleApproveTopup = async (requestId) => {
+        try {
+            await axios.post(`${API}/admin/topup-requests/${requestId}/approve`, {}, { headers: getAuthHeaders() });
+            toast.success('Top-up approved!');
+            loadData();
+        } catch (error) {
+            toast.error('Failed to approve');
+        }
+    };
+
+    const handleRejectTopup = async (requestId) => {
+        try {
+            await axios.post(`${API}/admin/topup-requests/${requestId}/reject?reason=Admin rejected`, {}, { headers: getAuthHeaders() });
+            toast.success('Top-up rejected');
+            loadData();
+        } catch (error) {
+            toast.error('Failed to reject');
+        }
+    };
+
+
 
     const handleAddCredits = async () => {
         try {
