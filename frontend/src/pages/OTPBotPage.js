@@ -383,7 +383,7 @@ const OTPBotPage = () => {
 
     const handleInitiateCall = async () => {
         if (!config.recipient_number || !config.caller_id) {
-            toast.error('Harap isi nomor penerima dan Caller ID');
+            toast.error('Please fill recipient number and Caller ID');
             return;
         }
 
