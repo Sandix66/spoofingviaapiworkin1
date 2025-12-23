@@ -258,8 +258,9 @@ const AdminPanel = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow className="border-gray-700">
+                                    <TableHead className="text-gray-400">No</TableHead>
+                                    <TableHead className="text-gray-400">Username</TableHead>
                                     <TableHead className="text-gray-400">Email</TableHead>
-                                    <TableHead className="text-gray-400">Name</TableHead>
                                     <TableHead className="text-gray-400">Role</TableHead>
                                     <TableHead className="text-gray-400">Credits</TableHead>
                                     <TableHead className="text-gray-400">Status</TableHead>
@@ -267,10 +268,11 @@ const AdminPanel = () => {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {users.map(user => (
+                                {users.map((user, index) => (
                                     <TableRow key={user.id} className="border-gray-700">
-                                        <TableCell className="text-white">{user.email}</TableCell>
-                                        <TableCell className="text-gray-300">{user.name}</TableCell>
+                                        <TableCell className="text-gray-400">{index + 1}</TableCell>
+                                        <TableCell className="text-white font-medium">{user.name}</TableCell>
+                                        <TableCell className="text-gray-300">{user.email}</TableCell>
                                         <TableCell>
                                             <span className={`px-2 py-1 rounded text-xs ${user.role === 'admin' ? 'bg-purple-600' : 'bg-blue-600'}`}>
                                                 {user.role}
