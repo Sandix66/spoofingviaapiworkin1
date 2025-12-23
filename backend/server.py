@@ -1069,7 +1069,7 @@ async def get_user_calls(limit: int = 50, current_user: dict = Depends(get_curre
 
 @user_router.post("/generate-invite")
 async def user_generate_invite(current_user: dict = Depends(get_current_user)):
-    """User generates their own invitation code (1 per user)"""
+    """User generates their own invitation code (1 per user) - Costs 50 credits"""
     # Check if user already generated a code
     existing = await db.invitation_codes.find_one({
         "created_by": current_user["id"],
@@ -1078,6 +1078,17 @@ async def user_generate_invite(current_user: dict = Depends(get_current_user)):
     
     if existing:
         return {"code": existing["code"], "is_used": existing["is_used"], "message": "You already have an invitation code"}
+    
+    # Check if user has enough credits (50 credits required)
+    user_credits = current_user.get("credits", 0)
+    if user_credits < 50:
+        raise HTTPException(status_code=402, detail="Insufficient credits. You need 50 credits to generate an invitation code.")
+    
+    # Deduct 50 credits
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$inc": {"credits": -50}}
+    )
     
     # Generate new code
     code = str(uuid.uuid4())[:8].upper()
@@ -1095,9 +1106,12 @@ async def user_generate_invite(current_user: dict = Depends(get_current_user)):
     }
     
     await db.invitation_codes.insert_one(invite_doc)
-    await log_activity(current_user["id"], "invitation_code_generated", {"code": code})
     
-    return {"code": code, "message": "Invitation code generated successfully"}
+    # Log activities
+    await log_activity(current_user["id"], "invitation_code_generated", {"code": code, "cost": 50})
+    await log_activity(current_user["id"], "credit_deducted", {"amount": -50, "reason": "Generated invitation code", "new_balance": user_credits - 50})
+    
+    return {"code": code, "message": "Invitation code generated successfully. 50 credits deducted."}
 
 @user_router.get("/my-invite")
 async def get_my_invite(current_user: dict = Depends(get_current_user)):
