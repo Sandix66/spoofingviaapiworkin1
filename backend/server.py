@@ -463,13 +463,35 @@ async def save_call_history(session_id: str, session: dict, call_id: str, status
         duration_minutes = math.ceil(duration_seconds / 60)
         cost_credits = max(1, duration_minutes)
         
-        # Deduct remaining credits
-        additional_credits = cost_credits - 1
-        if additional_credits > 0:
-            await db.users.update_one(
-                {"id": session.get("user_id")},
-                {"$inc": {"credits": -additional_credits}}
+        # Deduct from plan or credits based on session
+        using_plan = session.get("using_plan", False)
+        plan_id = session.get("plan_id")
+        
+        if using_plan and plan_id:
+            # Using daily plan - track minutes
+            await db.user_plans.update_one(
+                {"id": plan_id},
+                {"$inc": {"used_minutes": duration_minutes}}
             )
+            
+            # Check if FUP exceeded after this call
+            updated_plan = await db.user_plans.find_one({"id": plan_id}, {"_id": 0})
+            if updated_plan and updated_plan.get("used_minutes", 0) > updated_plan.get("fup_minutes", 0):
+                # FUP exceeded - deduct overflow from credits
+                overflow_minutes = updated_plan.get("used_minutes") - updated_plan.get("fup_minutes")
+                if overflow_minutes > 0:
+                    await db.users.update_one(
+                        {"id": session.get("user_id")},
+                        {"$inc": {"credits": -overflow_minutes}}
+                    )
+        else:
+            # Using credits - deduct remaining (already deducted 1 at start)
+            additional_credits = cost_credits - 1
+            if additional_credits > 0:
+                await db.users.update_one(
+                    {"id": session.get("user_id")},
+                    {"$inc": {"credits": -additional_credits}}
+                )
         
         # Save to call_history
         call_history_doc = {
