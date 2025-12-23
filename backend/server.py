@@ -92,6 +92,9 @@ class UserResponse(BaseModel):
     id: str
     email: str
     name: str
+    role: str = "user"
+    credits: float = 0
+    is_active: bool = True
     created_at: str
 
 class TokenResponse(BaseModel):
