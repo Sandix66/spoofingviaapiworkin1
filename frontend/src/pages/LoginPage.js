@@ -31,20 +31,6 @@ const LoginPage = () => {
         }
     };
 
-    const handleRegister = async (e) => {
-        e.preventDefault();
-        setIsLoading(true);
-        try {
-            await register(registerEmail, registerPassword, registerName);
-            toast.success('Registrasi berhasil!');
-            navigate('/dashboard');
-        } catch (error) {
-            toast.error(error.response?.data?.detail || 'Registrasi gagal');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
             {/* Background */}
