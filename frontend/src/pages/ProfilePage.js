@@ -49,6 +49,25 @@ const ProfilePage = () => {
         }
     };
 
+
+
+    const handleGenerateMyInvite = async () => {
+        try {
+            const response = await axios.post(`${API}/user/generate-invite`, {}, { headers: getAuthHeaders() });
+            setMyInvite(response.data.code);
+            toast.success(response.data.message || 'Invitation code generated!');
+        } catch (error) {
+            toast.error('Failed to generate invitation code');
+        }
+    };
+
+    const handleCopyInvite = () => {
+        if (myInvite?.code) {
+            navigator.clipboard.writeText(myInvite.code);
+            toast.success('Invitation code copied!');
+        }
+    };
+
     const handleChangePassword = async () => {
         if (newPassword !== confirmPassword) {
             toast.error('Passwords do not match');
