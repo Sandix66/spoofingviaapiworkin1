@@ -435,6 +435,8 @@ async def fetch_and_emit_recording(session_id: str, call_id: str):
         
         logger.warning(f"No recording found for call {call_id}")
         
+    except Exception as e:
+        logger.error(f"Error fetching recording: {e}")
 
 
 async def save_call_history(session_id: str, session: dict, call_id: str, status: str):
