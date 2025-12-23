@@ -92,6 +92,29 @@ const AdminPanel = () => {
         }
     };
 
+
+    const handleResetPassword = async () => {
+        if (!newPassword || newPassword.length < 4) {
+            toast.error('Password must be at least 4 characters');
+            return;
+        }
+
+        try {
+            await axios.post(
+                `${API}/admin/users/${selectedUser.id}/reset-password?new_password=${encodeURIComponent(newPassword)}`,
+                {},
+                { headers: getAuthHeaders() }
+            );
+            toast.success('Password reset successfully!');
+            setIsPasswordDialogOpen(false);
+            setNewPassword('');
+            setSelectedUser(null);
+        } catch (error) {
+            toast.error('Failed to reset password');
+        }
+    };
+
+
     const handleAddCredits = async () => {
         try {
             await axios.post(
