@@ -169,32 +169,48 @@ const ProfilePage = () => {
                     <CardContent>
                         {myInvite ? (
                             <div className="p-6 bg-purple-900/20 border border-purple-500/30 rounded-lg text-center">
-                                <p className="text-sm text-gray-300 mb-3">Share this code to invite friends:</p>
+                                <p className="text-sm text-gray-300 mb-3">Your invitation code:</p>
                                 <div className="flex items-center justify-center gap-3">
                                     <code className="text-3xl font-mono font-bold text-purple-400 tracking-widest">
                                         {myInvite.code}
                                     </code>
-                                    <Button onClick={handleCopyInvite} className="bg-purple-600">
-                                        <Copy className="w-4 h-4 mr-2" />
-                                        Copy
-                                    </Button>
+                                    {!myInvite.is_used && (
+                                        <Button onClick={handleCopyInvite} className="bg-purple-600">
+                                            <Copy className="w-4 h-4 mr-2" />
+                                            Copy
+                                        </Button>
+                                    )}
                                 </div>
                                 <p className="text-xs text-gray-400 mt-4">
                                     Status: {myInvite.is_used ? (
-                                        <span className="text-red-400">Used</span>
+                                        <span className="text-red-400 font-bold">Used</span>
                                     ) : (
-                                        <span className="text-green-400">Available</span>
+                                        <span className="text-green-400 font-bold">Available</span>
                                     )}
                                 </p>
-                                {myInvite.is_used && (
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Used on {new Date(myInvite.used_at).toLocaleDateString()}
-                                    </p>
+                                {myInvite.is_used ? (
+                                    <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded">
+                                        <p className="text-sm text-red-400">⚠️ This code has been used</p>
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Used on {new Date(myInvite.used_at).toLocaleDateString()}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-2">
+                                            You cannot generate a new invitation code. Each user is limited to 1 invitation code only.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="mt-4 p-3 bg-green-900/20 border border-green-500/30 rounded">
+                                        <p className="text-xs text-green-400">✓ Code is active and can be used once</p>
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Share this code with 1 friend to invite them. After used, you cannot generate a new code.
+                                        </p>
+                                    </div>
                                 )}
                             </div>
                         ) : (
                             <div className="text-center py-6">
-                                <p className="text-gray-400 mb-4">You haven't generated an invitation code yet</p>
+                                <p className="text-gray-400 mb-2">You haven't generated an invitation code yet</p>
+                                <p className="text-xs text-yellow-400 mb-4">⚠️ You can only generate 1 invitation code (lifetime limit)</p>
                                 <Button onClick={handleGenerateMyInvite} className="bg-purple-600">
                                     <Ticket className="w-4 h-4 mr-2" />
                                     Generate My Invite Code
