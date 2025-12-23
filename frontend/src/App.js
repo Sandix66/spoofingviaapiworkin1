@@ -104,6 +104,15 @@ function AppRoutes() {
                 } 
             />
             <Route 
+                path="/topup" 
+                element={
+                    <ProtectedRoute>
+                        <TopupPage />
+                    </ProtectedRoute>
+                } 
+            />
+
+            <Route 
                 path="/profile" 
                 element={
                     <ProtectedRoute>
