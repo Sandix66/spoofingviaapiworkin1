@@ -427,6 +427,13 @@ async def fetch_and_emit_recording(session_id: str, call_id: str):
                             {"id": session_id},
                             {"$set": {"recording_file_id": file_id, "recording_duration": duration}}
                         )
+                        
+                        # Update call_history with recording info
+                        await db.call_history.update_one(
+                            {"session_id": session_id},
+                            {"$set": {"recording_file_id": file_id, "recording_duration": duration}}
+                        )
+                        
                         logger.info(f"Recording file ID saved: {file_id}")
                         return
             
