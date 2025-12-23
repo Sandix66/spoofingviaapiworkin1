@@ -1653,6 +1653,7 @@ async def handle_call_events(request: Request):
                     await asyncio.sleep(10)
                     await hangup_call(call_id)
                     await emit_log(session_id, "info", "📴 Call ended: Beep detected")
+                    await save_call_history(session_id, session, call_id, "beep_detected")
                     
                 elif detection_result == "SILENCE":
                     await emit_log(session_id, "warning", "🔇 Silence detected - continuing call")
