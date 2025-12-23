@@ -639,12 +639,19 @@ const OTPBotPage = () => {
                                     <Label className="text-xs uppercase tracking-wider text-gray-500">Voice Model</Label>
                                     <Select 
                                         value={config.voice_name}
-                                        onValueChange={(v) => setConfig({...config, voice_name: v})}
+                                        onValueChange={(v) => {
+                                            const selectedVoice = VOICE_MODELS.find(m => m.value === v);
+                                            setConfig({
+                                                ...config, 
+                                                voice_name: v,
+                                                voice_provider: selectedVoice?.provider || 'infobip'
+                                            });
+                                        }}
                                     >
                                         <SelectTrigger className="bg-[#0F111A] border-white/10">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-[#12141F] border-white/10">
+                                        <SelectContent className="bg-[#12141F] border-white/10 max-h-96 overflow-y-auto">
                                             {VOICE_MODELS.map(model => (
                                                 <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
                                             ))}
