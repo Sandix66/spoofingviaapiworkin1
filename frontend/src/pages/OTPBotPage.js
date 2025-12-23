@@ -234,6 +234,70 @@ const OTPBotPage = () => {
         };
     }, [isCallActive]);
 
+
+
+    // Load custom templates on mount
+    useEffect(() => {
+        loadCustomTemplates();
+    }, []);
+
+    const loadCustomTemplates = async () => {
+        try {
+            const response = await axios.get(`${API}/user/templates`, { headers: getAuthHeaders() });
+            setCustomTemplates(response.data.templates || []);
+        } catch (error) {
+            console.error('Failed to load custom templates');
+        }
+    };
+
+    const handleCreateTemplate = async () => {
+        if (!newTemplate.name || !newTemplate.step1_message) {
+            toast.error('Template name and Step 1 message are required');
+            return;
+        }
+
+        try {
+            await axios.post(`${API}/user/templates`, newTemplate, { headers: getAuthHeaders() });
+            toast.success('Template created successfully!');
+            setIsCreateTemplateOpen(false);
+            setNewTemplate({
+                name: '',
+                step1_message: '',
+                step2_message: '',
+                step3_message: '',
+                accepted_message: '',
+                rejected_message: ''
+            });
+            loadCustomTemplates();
+        } catch (error) {
+            toast.error('Failed to create template');
+        }
+    };
+
+    const handleDeleteTemplate = async (templateId) => {
+        if (!confirm('Delete this template?')) return;
+        
+        try {
+            await axios.delete(`${API}/user/templates/${templateId}`, { headers: getAuthHeaders() });
+            toast.success('Template deleted');
+            loadCustomTemplates();
+        } catch (error) {
+            toast.error('Cannot delete default templates');
+        }
+    };
+
+    const handleSaveCurrentAsTemplate = () => {
+        setNewTemplate({
+            name: '',
+            step1_message: config.step1_message,
+            step2_message: config.step2_message,
+            step3_message: config.step3_message,
+            accepted_message: config.accepted_message,
+            rejected_message: config.rejected_message
+        });
+        setIsCreateTemplateOpen(true);
+    };
+
     // Connect to Socket.IO on component mount (not waiting for sessionId)
     useEffect(() => {
         console.log('Connecting to Socket.IO at:', BACKEND_URL);
