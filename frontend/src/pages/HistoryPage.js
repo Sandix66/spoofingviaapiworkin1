@@ -121,9 +121,9 @@ const HistoryPage = () => {
             <div>
                 <h1 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-3">
                     <History className="w-8 h-8 text-cyan-400" />
-                    <span>Riwayat <span className="text-gradient">Panggilan</span></span>
+                    <span>Call <span className="text-gradient">History</span></span>
                 </h1>
-                <p className="text-gray-400 mt-1">Lihat semua panggilan yang telah dilakukan</p>
+                <p className="text-gray-400 mt-1">View all your calls</p>
             </div>
 
             {/* Filters */}
@@ -134,7 +134,7 @@ const HistoryPage = () => {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
                             <Input
                                 data-testid="search-input"
-                                placeholder="Cari nomor telepon atau pesan..."
+                                placeholder="Search phone number or message..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10 bg-[#0F111A] border-white/10"
@@ -147,7 +147,7 @@ const HistoryPage = () => {
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-[#12141F] border-white/10">
-                                    <SelectItem value="all">Semua</SelectItem>
+                                    <SelectItem value="all">All</SelectItem>
                                     <SelectItem value="completed">Selesai</SelectItem>
                                     <SelectItem value="initiated">Diinisiasi</SelectItem>
                                     <SelectItem value="failed">Gagal</SelectItem>
@@ -172,7 +172,7 @@ const HistoryPage = () => {
                     <CardTitle className="text-lg flex items-center justify-between">
                         <span>Log Panggilan</span>
                         <span className="text-sm font-normal text-gray-500">
-                            {filteredCalls.length} panggilan
+                            {filteredCalls.length} calls
                         </span>
                     </CardTitle>
                 </CardHeader>
@@ -184,8 +184,8 @@ const HistoryPage = () => {
                     ) : filteredCalls.length === 0 ? (
                         <div className="text-center py-16 text-gray-500">
                             <History className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                            <p className="text-lg">Tidak ada data</p>
-                            <p className="text-sm">Belum ada panggilan yang sesuai filter</p>
+                            <p className="text-lg">No data</p>
+                            <p className="text-sm">No calls match your filter</p>
                         </div>
                     ) : (
                         <>
