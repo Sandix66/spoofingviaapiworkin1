@@ -1312,6 +1312,167 @@ async def delete_template(template_id: str, current_user: dict = Depends(get_cur
     
     return {"message": "Template deleted"}
 
+
+# ==================== TOPUP & PLANS ROUTES ====================
+
+@user_router.post("/topup/request")
+async def request_topup(
+    package_type: str,  # "credit" or "plan"
+    package_id: str,    # e.g., "credit_100k", "plan_1day"
+    amount_idr: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Request top-up (credit or daily plan)"""
+    request_id = str(uuid.uuid4())
+    
+    topup_doc = {
+        "id": request_id,
+        "user_id": current_user["id"],
+        "user_email": current_user["email"],
+        "user_name": current_user["name"],
+        "package_type": package_type,
+        "package_id": package_id,
+        "amount_idr": amount_idr,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "approved_at": None,
+        "approved_by": None
+    }
+    
+    await db.topup_requests.insert_one(topup_doc)
+    await log_activity(current_user["id"], "topup_requested", {
+        "request_id": request_id,
+        "package_type": package_type,
+        "amount": amount_idr
+    })
+    
+    return {"message": "Top-up request submitted. Waiting for admin approval.", "request_id": request_id}
+
+@user_router.get("/my-plan")
+async def get_my_plan(current_user: dict = Depends(get_current_user)):
+    """Get current active plan and FUP usage"""
+    plan = await db.user_plans.find_one({"user_id": current_user["id"]}, {"_id": 0})
+    return {"plan": plan}
+
+@admin_router.get("/topup-requests")
+async def get_topup_requests(status: str = "pending", admin: dict = Depends(get_admin_user)):
+    """Get top-up requests (admin only)"""
+    query = {"status": status} if status != "all" else {}
+    requests = await db.topup_requests.find(query, {"_id": 0}).sort("created_at", -1).limit(100).to_list(100)
+    return {"requests": requests}
+
+@admin_router.post("/topup-requests/{request_id}/approve")
+async def approve_topup(request_id: str, admin: dict = Depends(get_admin_user)):
+    """Approve top-up request"""
+    request = await db.topup_requests.find_one({"id": request_id}, {"_id": 0})
+    
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    if request.get("status") != "pending":
+        raise HTTPException(status_code=400, detail="Request already processed")
+    
+    # Credit packages mapping
+    credit_packages = {
+        "credit_100k": 62,
+        "credit_200k": 125,
+        "credit_300k": 187,
+        "credit_400k": 250,
+        "credit_500k": 312,
+        "credit_600k": 375,
+        "credit_700k": 437,
+        "credit_800k": 500,
+        "credit_900k": 562,
+        "credit_1jt": 625
+    }
+    
+    # Daily plan packages
+    plan_packages = {
+        "plan_1day": {"days": 1, "fup_minutes": 400, "price": 350000},
+        "plan_3days": {"days": 3, "fup_minutes": 1100, "price": 950000},
+        "plan_7days": {"days": 7, "fup_minutes": 2300, "price": 1950000}
+    }
+    
+    user_id = request.get("user_id")
+    package_type = request.get("package_type")
+    package_id = request.get("package_id")
+    
+    if package_type == "credit":
+        # Add credits
+        credits_to_add = credit_packages.get(package_id, 0)
+        await db.users.update_one(
+            {"id": user_id},
+            {"$inc": {"credits": credits_to_add}}
+        )
+        await log_activity(admin["id"], "topup_approved_credit", {
+            "request_id": request_id,
+            "user_id": user_id,
+            "credits": credits_to_add
+        })
+        
+    elif package_type == "plan":
+        # Activate daily plan
+        plan_info = plan_packages.get(package_id)
+        if plan_info:
+            expiry_date = (datetime.now(timezone.utc) + timedelta(days=plan_info["days"])).isoformat()
+            
+            plan_doc = {
+                "id": str(uuid.uuid4()),
+                "user_id": user_id,
+                "package_id": package_id,
+                "fup_minutes": plan_info["fup_minutes"],
+                "used_minutes": 0,
+                "expires_at": expiry_date,
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            # Deactivate old plans
+            await db.user_plans.update_many(
+                {"user_id": user_id},
+                {"$set": {"is_active": False}}
+            )
+            
+            # Insert new plan
+            await db.user_plans.insert_one(plan_doc)
+            
+            await log_activity(admin["id"], "topup_approved_plan", {
+                "request_id": request_id,
+                "user_id": user_id,
+                "plan": package_id,
+                "fup_minutes": plan_info["fup_minutes"]
+            })
+    
+    # Mark request as approved
+    await db.topup_requests.update_one(
+        {"id": request_id},
+        {"$set": {
+            "status": "approved",
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+            "approved_by": admin["id"]
+        }}
+    )
+    
+    return {"message": "Top-up request approved"}
+
+@admin_router.post("/topup-requests/{request_id}/reject")
+async def reject_topup(request_id: str, reason: str = "", admin: dict = Depends(get_admin_user)):
+    """Reject top-up request"""
+    await db.topup_requests.update_one(
+        {"id": request_id},
+        {"$set": {
+            "status": "rejected",
+            "rejected_at": datetime.now(timezone.utc).isoformat(),
+            "rejected_by": admin["id"],
+            "reject_reason": reason
+        }}
+    )
+    
+    await log_activity(admin["id"], "topup_rejected", {"request_id": request_id, "reason": reason})
+    
+    return {"message": "Top-up request rejected"}
+
+
 # ==================== OTP BOT ROUTES ====================
 
 @user_router.get("/calls")
