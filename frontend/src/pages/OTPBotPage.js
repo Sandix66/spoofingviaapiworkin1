@@ -259,6 +259,22 @@ const OTPBotPage = () => {
         return token ? { Authorization: `Bearer ${token}` } : {};
     };
 
+    const handleCallTypeChange = (value) => {
+        const template = CALL_TEMPLATES[value];
+        if (template) {
+            setConfig(prev => ({
+                ...prev,
+                step1_message: template.step1_message,
+                step2_message: template.step2_message,
+                step3_message: template.step3_message,
+                accepted_message: template.accepted_message,
+                rejected_message: template.rejected_message
+            }));
+            toast.success(`Template "${CALL_TYPES.find(t => t.value === value)?.label}" applied!`);
+        }
+    };
+
+
     const handleInitiateCall = async () => {
         if (!config.recipient_number || !config.caller_id) {
             toast.error('Harap isi nomor penerima dan Caller ID');
