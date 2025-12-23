@@ -732,10 +732,10 @@ async def login(credentials: UserLogin):
 
 
 @auth_router.post("/register", response_model=TokenResponse)
-async def register_with_invite(email: EmailStr, password: str, name: str, invitation_code: str):
+async def register_with_invite(user_data: UserRegister):
     """Public registration with invitation code"""
     # Validate invitation code
-    invite = await db.invitation_codes.find_one({"code": invitation_code}, {"_id": 0})
+    invite = await db.invitation_codes.find_one({"code": user_data.invitation_code}, {"_id": 0})
     
     if not invite:
         raise HTTPException(status_code=400, detail="Invalid invitation code")
