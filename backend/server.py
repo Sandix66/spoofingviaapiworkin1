@@ -706,7 +706,15 @@ async def login(credentials: UserLogin):
     
     return TokenResponse(
         access_token=access_token,
-        user=UserResponse(id=user["id"], email=user["email"], name=user["name"], created_at=user["created_at"])
+        user=UserResponse(
+            id=user["id"], 
+            email=user["email"], 
+            name=user["name"], 
+            role=user.get("role", "user"),
+            credits=user.get("credits", 0),
+            is_active=user.get("is_active", True),
+            created_at=user["created_at"]
+        )
     )
 
 @auth_router.get("/me", response_model=UserResponse)
