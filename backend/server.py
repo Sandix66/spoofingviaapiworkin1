@@ -33,6 +33,14 @@ INFOBIP_API_KEY = os.environ.get('INFOBIP_API_KEY')
 INFOBIP_BASE_URL = os.environ.get('INFOBIP_BASE_URL', 'qdnddq.api.infobip.com')
 INFOBIP_CALLS_CONFIG_ID = os.environ.get('INFOBIP_CALLS_CONFIG_ID')
 
+# ElevenLabs configuration
+ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY')
+elevenlabs_client = ElevenLabs(api_key=ELEVENLABS_API_KEY) if ELEVENLABS_API_KEY else None
+
+# Deepgram configuration
+DEEPGRAM_API_KEY = os.environ.get('DEEPGRAM_API_KEY')
+deepgram_client = DeepgramClient(DEEPGRAM_API_KEY) if DEEPGRAM_API_KEY else None
+
 # Webhook base URL
 WEBHOOK_BASE_URL = "https://ivrflow.preview.emergentagent.com/api"
 
