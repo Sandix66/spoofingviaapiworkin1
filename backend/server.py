@@ -674,6 +674,7 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
         "first_input": None,
         "otp_received": None,
         "otp_digits_collected": "",
+        "info_type": "phone_otp",
         "created_at": now,
         "logs": [],
         "messages": {
