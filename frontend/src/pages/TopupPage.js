@@ -33,15 +33,15 @@ const TopupPage = () => {
     ];
 
     const planPackages = [
-        { id: 'plan_1day', days: 1, minutes: 400, price: 350000 },
-        { id: 'plan_3days', days: 3, minutes: 1100, price: 950000 },
-        { id: 'plan_7days', days: 7, minutes: 2300, price: 1950000 }
+        { id: 'plan_1day', days: 1, minutes: 400, price: 500000, priceUSDT: 31.65 },
+        { id: 'plan_3days', days: 3, minutes: 1100, price: 1450000, priceUSDT: 91.77 },
+        { id: 'plan_7days', days: 7, minutes: 2300, price: 3250000, priceUSDT: 205.70 }
     ];
 
     const handleRequestTopup = async (packageType, packageId, amountIdr) => {
         setLoading(true);
         try {
-            await axios.post(`${API}/user/topup/request`, null, {
+            const response = await axios.post(`${API}/user/topup/request`, null, {
                 params: {
                     package_type: packageType,
                     package_id: packageId,
@@ -49,7 +49,17 @@ const TopupPage = () => {
                 },
                 headers: getAuthHeaders()
             });
-            toast.success('Top-up request submitted! Waiting for admin approval.');
+            
+            // Show payment token
+            const token = response.data.payment_token;
+            toast.success(
+                <div>
+                    <p className="font-bold">Request submitted!</p>
+                    <p className="text-sm">Payment Token: <strong>{token}</strong></p>
+                    <p className="text-xs mt-1">Send this token to admin via Telegram</p>
+                </div>,
+                { duration: 10000 }
+            );
         } catch (error) {
             toast.error(error.response?.data?.detail || 'Failed to submit request');
         } finally {
