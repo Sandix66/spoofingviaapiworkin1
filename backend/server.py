@@ -780,7 +780,7 @@ async def register_with_invite(user_data: UserRegister):
     
     # Log activity
     await log_activity(user_id, "user_registered", {
-        "invitation_code": invitation_code,
+        "invitation_code": user_data.invitation_code,
         "invited_by": invite.get("created_by")
     })
     
