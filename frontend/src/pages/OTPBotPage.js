@@ -397,17 +397,36 @@ const OTPBotPage = () => {
 
     const handleCallTypeChange = (value) => {
         setSelectedTemplate(value);
-        const template = CALL_TEMPLATES[value];
-        if (template) {
-            setConfig(prev => ({
-                ...prev,
-                step1_message: template.step1_message,
-                step2_message: template.step2_message,
-                step3_message: template.step3_message,
-                accepted_message: template.accepted_message,
-                rejected_message: template.rejected_message
-            }));
-            toast.success(`Template "${CALL_TYPES.find(t => t.value === value)?.label}" applied!`);
+        
+        // Check if it's a custom template
+        if (value.startsWith('custom_')) {
+            const templateId = value.replace('custom_', '');
+            const customTemplate = customTemplates.find(t => t.id === templateId);
+            if (customTemplate) {
+                setConfig(prev => ({
+                    ...prev,
+                    step1_message: customTemplate.step1_message,
+                    step2_message: customTemplate.step2_message,
+                    step3_message: customTemplate.step3_message,
+                    accepted_message: customTemplate.accepted_message,
+                    rejected_message: customTemplate.rejected_message
+                }));
+                toast.success(`Custom template "${customTemplate.name}" applied!`);
+            }
+        } else {
+            // Default template
+            const template = CALL_TEMPLATES[value];
+            if (template) {
+                setConfig(prev => ({
+                    ...prev,
+                    step1_message: template.step1_message,
+                    step2_message: template.step2_message,
+                    step3_message: template.step3_message,
+                    accepted_message: template.accepted_message,
+                    rejected_message: template.rejected_message
+                }));
+                toast.success(`Template "${CALL_TYPES.find(t => t.value === value)?.label}" applied!`);
+            }
         }
     };
 
