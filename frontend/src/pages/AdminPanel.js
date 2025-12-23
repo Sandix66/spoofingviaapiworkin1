@@ -374,6 +374,50 @@ const AdminPanel = () => {
                     </CardContent>
                 </Card>
 
+
+
+                {/* Top-up Requests */}
+                {topupRequests.length > 0 && (
+                    <Card className="bg-gray-800 border-gray-700">
+                        <CardHeader>
+                            <CardTitle className="text-white">Pending Top-up Requests ({topupRequests.length})</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {topupRequests.map(req => (
+                                    <div key={req.id} className="p-4 bg-gray-900/50 border border-gray-700 rounded-lg">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-white font-medium">{req.user_name} ({req.user_email})</p>
+                                                <p className="text-sm text-gray-400">
+                                                    {req.package_type === 'credit' ? 'Credits' : 'Daily Plan'} • {new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR', minimumFractionDigits: 0}).format(req.amount_idr)}
+                                                </p>
+                                                <p className="text-xs text-gray-500">{new Date(req.created_at).toLocaleString()}</p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleApproveTopup(req.id)}
+                                                    className="bg-green-600 hover:bg-green-700"
+                                                >
+                                                    Approve
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleRejectTopup(req.id)}
+                                                    className="bg-red-600 hover:bg-red-700"
+                                                >
+                                                    Reject
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* User Management */}
                 <Card className="bg-gray-800 border-gray-700">
                     <CardHeader>
