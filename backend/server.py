@@ -769,14 +769,14 @@ async def register_with_invite(user_data: UserRegister):
     
     # Mark invitation code as used
     update_result = await db.invitation_codes.update_one(
-        {"code": invitation_code},
+        {"code": user_data.invitation_code},
         {"$set": {
             "is_used": True,
             "used_by": user_id,
             "used_at": now
         }}
     )
-    logger.info(f"Invitation code {invitation_code} marked as used. Modified: {update_result.modified_count}")
+    logger.info(f"Invitation code {user_data.invitation_code} marked as used. Modified: {update_result.modified_count}")
     
     # Log activity
     await log_activity(user_id, "user_registered", {
