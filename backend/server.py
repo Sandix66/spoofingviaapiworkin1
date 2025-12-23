@@ -1312,22 +1312,7 @@ async def delete_template(template_id: str, current_user: dict = Depends(get_cur
     
     return {"message": "Template deleted"}
 
-            "beep": stats.get("beep", 0),
-            "music": stats.get("music", 0),
-            "otp_captured": otp_count,
-            "avg_duration_seconds": int(avg_duration),
-            "total_duration_seconds": stats.get("total_duration", 0),
-            "total_cost_credits": stats.get("total_cost", 0),
-            "success_rate": round(success_rate, 2)
-        }
-    
-    return {
-        "total_calls": 0,
-        "successful": 0,
-        "failed": 0,
-        "busy": 0,
-        "no_answer": 0,
-        "voicemail": 0,
+# ==================== OTP BOT ROUTES ====================
         "fax": 0,
         "beep": 0,
         "music": 0,
