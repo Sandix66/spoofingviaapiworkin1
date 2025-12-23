@@ -815,8 +815,13 @@ async def handle_call_events(request: Request):
             # Handle both expected and unexpected DTMF
             # DTMF can be in body.dtmf or body.properties.dtmf
             dtmf_value = body.get("dtmf") or body.get("properties", {}).get("dtmf", "")
-            capture_requested = body.get("captureRequested") or body.get("properties", {}).get("captureRequested", True)
+            capture_requested = body.get("captureRequested")
+            if capture_requested is None:
+                capture_requested = body.get("properties", {}).get("captureRequested", True)
+            
             logger.info(f"DTMF_CAPTURED: dtmf={dtmf_value}, captureRequested: {capture_requested}")
+            
+            # Process DTMF regardless of captureRequested - user pressed a key
             if dtmf_value:
                 await handle_dtmf(session_id, session, call_id, dtmf_value)
             
