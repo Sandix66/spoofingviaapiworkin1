@@ -211,6 +211,7 @@ const OTPBotPage = () => {
         otp_digits: 6,
         language: 'en',
         voice_name: 'Joanna',
+        voice_provider: 'infobip',
         step1_message: 'Hello {name}. We have detected a login attempt to your {service} account from a new device or location. If you did not recognize this request, please press 1. If this was you, press 0 to approve.',
         step2_message: 'To Verification, please enter the {digits} digit security code that was just sent to your registered mobile number.',
         step3_message: 'Thank you. Please hold for a moment while we verify your code.',
