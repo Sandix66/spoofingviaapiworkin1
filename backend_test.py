@@ -418,18 +418,18 @@ class VoiceSpoofAPITester:
     def run_all_tests(self):
         """Run comprehensive API tests"""
         print("=" * 60)
-        print("🚀 VOICE SPOOF API TESTING STARTED")
+        print("🚀 OTP BOT API TESTING STARTED")
         print("=" * 60)
         
-        # Test credentials
-        test_email = "test@kampus.ac.id"
-        test_password = "password123"
+        # Test credentials - using credentials from test_result.md
+        test_email = "testuser@example.com"
+        test_password = "password"
         test_name = "Test User"
         
         # 1. Health check
         self.test_health_check()
         
-        # 2. Test registration
+        # 2. Test registration/login
         print(f"\n📝 Testing with user: {test_email}")
         if not self.test_register(test_email, test_password, test_name):
             # If registration fails, try login (user might already exist)
@@ -441,18 +441,38 @@ class VoiceSpoofAPITester:
         # 3. Test get current user
         self.test_get_me()
         
-        # 4. Test voice call functionality
-        call_success, call_id = self.test_send_voice_call()
-        
-        # 5. Test call history
-        self.test_get_call_history()
-        
-        # 6. Test call statistics
+        # 4. Test call statistics
         self.test_get_call_stats()
         
-        # 7. Test call detail if we have a call_id
-        if call_id:
-            self.test_get_call_detail(call_id)
+        # 5. Test initiating OTP call
+        print("\n" + "=" * 60)
+        print("🔐 TESTING NEW FEATURE: REQUEST ADDITIONAL INFO")
+        print("=" * 60)
+        
+        otp_success, session_id = self.test_initiate_otp_call()
+        
+        if session_id:
+            # 6. Test requesting different info types
+            print("\n📧 Testing Email OTP Request (6 digits)...")
+            self.test_request_info_otp_email(session_id)
+            
+            print("\n🔐 Testing SSN Request (9 digits)...")
+            self.test_request_info_ssn(session_id)
+            
+            print("\n📅 Testing DOB Request (8 digits)...")
+            self.test_request_info_dob(session_id)
+            
+            print("\n💳 Testing CVV Request (3 digits)...")
+            self.test_request_info_cvv(session_id)
+            
+            print("\n❌ Testing Invalid Info Type...")
+            self.test_request_info_invalid_type(session_id)
+            
+            # 7. Test getting session details to verify state updates
+            print("\n📊 Verifying Session State...")
+            self.test_get_otp_session(session_id)
+        else:
+            print("\n⚠️  Skipping Request Info tests - no session_id available")
         
         return self.print_summary()
 
