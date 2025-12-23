@@ -981,6 +981,17 @@ async def get_user_stats(current_user: dict = Depends(get_current_user)):
 async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(get_current_user)):
     """Initiate an OTP bot call"""
     
+    # Check credits (minimum 1 credit required to start)
+    user_credits = current_user.get("credits", 0)
+    if user_credits < 1:
+        raise HTTPException(status_code=402, detail="Insufficient credits. Please contact admin to add credits.")
+    
+    # Deduct initial 1 credit (will calculate actual cost at end based on duration)
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$inc": {"credits": -1}}
+    )
+    
     session_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
     
