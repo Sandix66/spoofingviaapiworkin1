@@ -299,10 +299,7 @@ async def create_outbound_call(to_number: str, from_number: str) -> dict:
         },
         "from": from_number,
         "callsConfigurationId": INFOBIP_CALLS_CONFIG_ID,
-        "machineDetection": {
-            "enabled": True,
-            "detectionTime": 4000  # 4 seconds for AMD analysis
-        },
+        "machineDetection": True,
         "recording": {
             "recordingType": "AUDIO",
             "recordingComposition": {
