@@ -1645,6 +1645,7 @@ async def handle_call_events(request: Request):
                     await db.otp_sessions.update_one({"id": session_id}, {"$set": {"status": "fax_detected"}})
                     await hangup_call(call_id)
                     await emit_log(session_id, "info", "📴 Call ended: Fax detected")
+                    await save_call_history(session_id, session, call_id, "fax_detected")
                     
                 elif detection_result == "BEEP":
                     await emit_log(session_id, "warning", "📯 Beep detected - ending call in 10 seconds")
