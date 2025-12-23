@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: Build OTP Bot Call application with multi-step IVR flow using Infobip Calls API. User presses DTMF, system should play next voice message. Admin can request additional information (Email OTP, SSN, DOB, CVV) during the call.
+user_problem_statement: Build OTP Bot Call application with multi-step IVR flow using Infobip Calls API. User presses DTMF, system should play next voice message. Admin can request additional information (Email OTP, SSN, DOB, CVV) during the call. Support multiple TTS providers (Infobip, ElevenLabs, Deepgram) with 35 voice options and 9 call templates.
 
 backend:
   - task: "IVR Flow - Step 1 to Step 2 transition"
