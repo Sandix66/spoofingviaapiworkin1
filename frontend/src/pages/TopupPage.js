@@ -153,18 +153,15 @@ const TopupPage = () => {
                                 </CardHeader>
                                 <CardContent className="text-center space-y-4">
                                     <div>
-                                        <p className="text-4xl font-bold text-cyan-400">{pkg.minutes}</p>
-                                        <p className="text-sm text-gray-400">Minutes</p>
-                                    </div>
-                                    <div>
                                         <p className="text-3xl font-bold text-green-400">
                                             {formatIDR(pkg.price)}
                                         </p>
+                                        <p className="text-lg text-cyan-400 mt-2">${pkg.priceUSDT.toFixed(2)} USDT</p>
                                     </div>
                                     <div className="space-y-2 text-sm text-gray-300">
                                         <div className="flex items-center justify-center gap-2">
                                             <Check className="w-4 h-4 text-green-400" />
-                                            {pkg.minutes} min FUP
+                                            Unlimited calls
                                         </div>
                                         <div className="flex items-center justify-center gap-2">
                                             <Check className="w-4 h-4 text-green-400" />
@@ -179,10 +176,22 @@ const TopupPage = () => {
                             </Card>
                         ))}
                     </div>
-                    <div className="mt-8 p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg max-w-4xl mx-auto">
-                        <p className="text-sm text-yellow-200">
-                            ℹ️ Daily plans use Fair Usage Policy (FUP). After reaching FUP limit, calls will deduct from your credits.
-                        </p>
+                    
+                    {/* Payment Instructions */}
+                    <div className="mt-8 p-6 bg-blue-900/20 border border-blue-500/30 rounded-lg max-w-4xl mx-auto">
+                        <h3 className="text-lg font-bold text-white mb-4">💬 Payment Instructions:</h3>
+                        <p className="text-sm text-gray-300 mb-3">Send message to Telegram for payment:</p>
+                        <div className="flex items-center gap-3">
+                            <a 
+                                href="https://t.me/TTGamik" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
+                            >
+                                Contact via Telegram
+                            </a>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-3">Include your payment token in the message for faster processing</p>
                     </div>
                 </TabsContent>
             </Tabs>
