@@ -51,17 +51,19 @@ const AdminPanel = () => {
 
     const loadData = async () => {
         try {
-            const [usersRes, statsRes, callsRes, activitiesRes] = await Promise.all([
+            const [usersRes, statsRes, callsRes, activitiesRes, inviteRes] = await Promise.all([
                 axios.get(`${API}/admin/users`, { headers: getAuthHeaders() }),
                 axios.get(`${API}/admin/stats`, { headers: getAuthHeaders() }),
                 axios.get(`${API}/admin/calls?limit=50`, { headers: getAuthHeaders() }),
-                axios.get(`${API}/admin/activities?limit=100`, { headers: getAuthHeaders() })
+                axios.get(`${API}/admin/activities?limit=100`, { headers: getAuthHeaders() }),
+                axios.get(`${API}/admin/invitation-codes`, { headers: getAuthHeaders() })
             ]);
 
             setUsers(usersRes.data.users || []);
             setStats(statsRes.data || {});
             setCalls(callsRes.data.calls || []);
             setActivities(activitiesRes.data.activities || []);
+            setInviteCodes(inviteRes.data.codes || []);
         } catch (error) {
             if (error.response?.status === 403) {
                 toast.error('Admin access required');
