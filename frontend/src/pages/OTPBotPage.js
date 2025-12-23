@@ -67,24 +67,13 @@ const VOICE_MODELS = [
     { value: 'bIHbv24MWmeRgasZH58o', label: '⚡ Will (US Male, Optimistic)', provider: 'elevenlabs' },
     { value: 'cjVigY5qzO86Huf0OWal', label: '⚡ Eric (US Male, Smooth)', provider: 'elevenlabs' },
     
-    // ElevenLabs Premium Community Voices
-    { value: 'Natasha', label: '⚡ Natasha (Valley Girl, Energetic) 💎', provider: 'elevenlabs' },
-    { value: 'Aaron', label: '⚡ Aaron (AI & Tech News) 💎', provider: 'elevenlabs' },
-    { value: 'Cassidy', label: '⚡ Cassidy (US Podcast) 💎', provider: 'elevenlabs' },
-    { value: 'Casey', label: '⚡ Casey (Countdown Style) 💎', provider: 'elevenlabs' },
-    { value: 'David-Storyteller', label: '⚡ David (British Storyteller) 💎', provider: 'elevenlabs' },
-    { value: 'Amelia', label: '⚡ Amelia (Audiobook, Hermione-like) 💎', provider: 'elevenlabs' },
-    { value: 'David-Castlemore', label: '⚡ David Castlemore (Mystery/Thriller) 💎', provider: 'elevenlabs' },
-    { value: 'Erin', label: '⚡ Erin (Meditation Guide) 💎', provider: 'elevenlabs' },
-    { value: 'Brittney', label: '⚡ Brittney (Professional) 💎', provider: 'elevenlabs' },
-    
     // Deepgram Voices
     { value: 'aura-asteria-en', label: '🌊 Asteria (Female, Clear)', provider: 'deepgram' },
     { value: 'aura-luna-en', label: '🌊 Luna (Female, Warm)', provider: 'deepgram' },
     { value: 'aura-stella-en', label: '🌊 Stella (Female, Bright)', provider: 'deepgram' },
     { value: 'aura-athena-en', label: '🌊 Athena (Female, Authoritative)', provider: 'deepgram' },
     { value: 'aura-hera-en', label: '🌊 Hera (Female, Mature)', provider: 'deepgram' },
-    { value: 'aura-2-andromeda-en', label: '🌊 Andromeda (Female, American) 💎', provider: 'deepgram' },
+    { value: 'aura-2-andromeda-en', label: '🌊 Andromeda (Female, American)', provider: 'deepgram' },
     { value: 'aura-orion-en', label: '🌊 Orion (Male, Deep)', provider: 'deepgram' },
     { value: 'aura-arcas-en', label: '🌊 Arcas (Male, Professional)', provider: 'deepgram' },
     { value: 'aura-perseus-en', label: '🌊 Perseus (Male, Confident)', provider: 'deepgram' },
