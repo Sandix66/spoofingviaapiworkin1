@@ -79,14 +79,6 @@ function AppRoutes() {
                 } 
             />
             <Route 
-                path="/call" 
-                element={
-                    <ProtectedRoute>
-                        <MakeCallPage />
-                    </ProtectedRoute>
-                } 
-            />
-            <Route 
                 path="/history" 
                 element={
                     <ProtectedRoute>
