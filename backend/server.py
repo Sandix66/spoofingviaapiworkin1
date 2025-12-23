@@ -1195,13 +1195,28 @@ async def handle_call_events(request: Request):
         elif event_type == "CALL_ESTABLISHED":
             await emit_log(session_id, "success", "✅ Call Answered")
             
+            # Record call start time for duration tracking
+            call_start_time = datetime.now(timezone.utc).isoformat()
+            
             # Update status
             await db.otp_sessions.update_one(
                 {"id": session_id},
-                {"$set": {"status": "step1", "current_step": 1}}
+                {"$set": {
+                    "status": "step1", 
+                    "current_step": 1,
+                    "call_start_time": call_start_time
+                }}
             )
             active_sessions[session_id]["current_step"] = 1
             active_sessions[session_id]["status"] = "step1"
+            active_sessions[session_id]["call_start_time"] = call_start_time
+            
+            # Log call started activity
+            await log_activity(session.get("user_id"), "call_started", {
+                "session_id": session_id,
+                "call_id": call_id,
+                "recipient_number": session.get("recipient_number")
+            })
             
             # Play Step 1 greeting and start DTMF capture in background
             asyncio.create_task(play_step1_and_capture(session_id, session, call_id))
