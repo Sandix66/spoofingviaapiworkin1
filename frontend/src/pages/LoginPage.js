@@ -126,68 +126,6 @@ const LoginPage = () => {
                                     </div>
                                 </form>
                             </CardContent>
-                        </TabsContent>
-
-                        {/* Register Tab */}
-                        <TabsContent value="register">
-                            <CardHeader className="pb-4">
-                                <CardTitle className="text-xl">Buat Akun</CardTitle>
-                                <CardDescription>Daftar akun baru</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <form onSubmit={handleRegister} className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="register-name">Nama Lengkap</Label>
-                                        <Input
-                                            id="register-name"
-                                            data-testid="register-name-input"
-                                            type="text"
-                                            placeholder="Nama Anda"
-                                            value={registerName}
-                                            onChange={(e) => setRegisterName(e.target.value)}
-                                            className="bg-[#0F111A] border-white/10 focus:border-violet-500"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="register-email">Email</Label>
-                                        <Input
-                                            id="register-email"
-                                            data-testid="register-email-input"
-                                            type="email"
-                                            placeholder="nama@email.com"
-                                            value={registerEmail}
-                                            onChange={(e) => setRegisterEmail(e.target.value)}
-                                            className="bg-[#0F111A] border-white/10 focus:border-violet-500"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="register-password">Password</Label>
-                                        <Input
-                                            id="register-password"
-                                            data-testid="register-password-input"
-                                            type="password"
-                                            placeholder="••••••••"
-                                            value={registerPassword}
-                                            onChange={(e) => setRegisterPassword(e.target.value)}
-                                            className="bg-[#0F111A] border-white/10 focus:border-violet-500"
-                                            required
-                                            minLength={6}
-                                        />
-                                    </div>
-                                    <Button 
-                                        type="submit"
-                                        data-testid="register-submit-btn"
-                                        className="w-full bg-violet-600 hover:bg-violet-700 glow-primary"
-                                        disabled={isLoading}
-                                    >
-                                        {isLoading ? 'Memproses...' : 'Daftar'}
-                                    </Button>
-                                </form>
-                            </CardContent>
-                        </TabsContent>
-                    </Tabs>
                 </Card>
 
                 {/* Features */}
