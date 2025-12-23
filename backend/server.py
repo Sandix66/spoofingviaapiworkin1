@@ -1157,7 +1157,7 @@ async def request_info(session_id: str, info_type: str, current_user: dict = Dep
     # Define messages and digit counts for each info type
     info_config = {
         "otp_email": {
-            "message": "We have sent a verification code to your email address. Please enter the 6 digit code from your email using your dial pad.",
+            "message": "Additional verification is required. We have sent a code to your email address. Or to your backup email address. Please enter the 6-digit code from your email using your phone's keypad.",
             "digits": 6,
             "emoji": "📧",
             "label": "Email OTP"
