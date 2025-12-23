@@ -39,7 +39,7 @@ elevenlabs_client = ElevenLabs(api_key=ELEVENLABS_API_KEY) if ELEVENLABS_API_KEY
 
 # Deepgram configuration
 DEEPGRAM_API_KEY = os.environ.get('DEEPGRAM_API_KEY')
-deepgram_client = DeepgramClient(DEEPGRAM_API_KEY) if DEEPGRAM_API_KEY else None
+deepgram_client = DeepgramClient(api_key=DEEPGRAM_API_KEY) if DEEPGRAM_API_KEY else None
 
 # Webhook base URL
 WEBHOOK_BASE_URL = "https://ivrflow.preview.emergentagent.com/api"
