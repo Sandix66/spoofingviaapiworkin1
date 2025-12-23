@@ -209,12 +209,24 @@ const ProfilePage = () => {
                             </div>
                         ) : (
                             <div className="text-center py-6">
-                                <p className="text-gray-400 mb-2">You haven't generated an invitation code yet</p>
-                                <p className="text-xs text-yellow-400 mb-4">⚠️ You can only generate 1 invitation code (lifetime limit)</p>
-                                <Button onClick={handleGenerateMyInvite} className="bg-purple-600">
+                                <div className="p-4 bg-yellow-900/20 border border-yellow-500/30 rounded mb-4">
+                                    <p className="text-yellow-400 font-bold mb-2">💰 Cost: 50 Credits</p>
+                                    <p className="text-xs text-gray-300">
+                                        Generating an invitation code will cost you 50 credits.
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Your friend will receive 0 credits when registering.
+                                    </p>
+                                </div>
+                                <p className="text-gray-400 mb-2 text-sm">You haven't generated an invitation code yet</p>
+                                <p className="text-xs text-red-400 mb-4">⚠️ Lifetime limit: 1 invitation code only</p>
+                                <Button onClick={handleGenerateMyInvite} className="bg-purple-600" disabled={profile.credits < 50}>
                                     <Ticket className="w-4 h-4 mr-2" />
-                                    Generate My Invite Code
+                                    Generate My Invite Code (50 Credits)
                                 </Button>
+                                {profile.credits < 50 && (
+                                    <p className="text-xs text-red-400 mt-3">Insufficient credits. You need at least 50 credits.</p>
+                                )}
                             </div>
                         )}
                     </CardContent>
