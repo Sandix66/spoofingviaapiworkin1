@@ -1182,7 +1182,10 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
             "failed": {"$sum": {"$cond": [{"$eq": ["$status", "failed"]}, 1, 0]}},
             "busy": {"$sum": {"$cond": [{"$eq": ["$status", "busy"]}, 1, 0]}},
             "no_answer": {"$sum": {"$cond": [{"$eq": ["$status", "no_answer"]}, 1, 0]}},
-            "voicemail": {"$sum": {"$cond": [{"$eq": ["$status", "voicemail_detected"]}, 1, 0]}}
+            "voicemail": {"$sum": {"$cond": [{"$eq": ["$status", "voicemail_detected"]}, 1, 0]}},
+            "fax": {"$sum": {"$cond": [{"$eq": ["$status", "fax_detected"]}, 1, 0]}},
+            "beep": {"$sum": {"$cond": [{"$eq": ["$status", "beep_detected"]}, 1, 0]}},
+            "music": {"$sum": {"$cond": [{"$eq": ["$status", "music_detected"]}, 1, 0]}}
         }}
     ]
     
