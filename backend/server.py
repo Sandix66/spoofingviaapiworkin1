@@ -1417,11 +1417,11 @@ async def approve_topup(request_id: str, admin: dict = Depends(get_admin_user)):
         "credit_1jt": 625
     }
     
-    # Daily plan packages
+    # Daily plan packages (Updated prices)
     plan_packages = {
-        "plan_1day": {"days": 1, "fup_minutes": 400, "price": 350000},
-        "plan_3days": {"days": 3, "fup_minutes": 1100, "price": 950000},
-        "plan_7days": {"days": 7, "fup_minutes": 2300, "price": 1950000}
+        "plan_1day": {"days": 1, "fup_minutes": 400, "price": 500000},
+        "plan_3days": {"days": 3, "fup_minutes": 1100, "price": 1450000},
+        "plan_7days": {"days": 7, "fup_minutes": 2300, "price": 3250000}
     }
     
     user_id = request.get("user_id")
