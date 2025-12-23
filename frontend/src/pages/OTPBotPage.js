@@ -710,6 +710,7 @@ const OTPBotPage = () => {
                                     </div>
                                 </div>
                             </div>
+                            )}
 
 
                             <div className="space-y-2">
