@@ -669,6 +669,21 @@ const OTPBotPage = () => {
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    
+                                    {/* Preview Voice Button - Only for ElevenLabs and Deepgram */}
+                                    {config.voice_provider !== 'infobip' && (
+                                        <Button
+                                            type="button"
+                                            onClick={handlePreviewVoice}
+                                            disabled={isLoading}
+                                            size="sm"
+                                            variant="outline"
+                                            className="mt-2 w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                                        >
+                                            <Volume2 className="w-3 h-3 mr-2" />
+                                            Preview Voice
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
 
