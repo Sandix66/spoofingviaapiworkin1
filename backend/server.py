@@ -163,6 +163,25 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         
         user = await db.users.find_one({"id": user_id}, {"_id": 0})
         if user is None:
+
+
+async def get_admin_user(current_user: dict = Depends(get_current_user)):
+    """Verify user is admin"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+async def log_activity(user_id: str, action_type: str, details: dict = None):
+    """Log user activity to database"""
+    activity = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "action_type": action_type,
+        "details": details or {},
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.user_activities.insert_one(activity)
+
             raise HTTPException(status_code=401, detail="User not found")
         return user
     except jwt.ExpiredSignatureError:
