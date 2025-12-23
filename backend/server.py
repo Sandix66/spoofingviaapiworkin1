@@ -713,6 +713,8 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
         "service_name": config.service_name,
         "otp_digits": config.otp_digits,
         "language": config.language,
+        "voice_name": config.voice_name,
+        "voice_provider": config.voice_provider,
         "status": "initiating",
         "current_step": 0,
         "call_id": None,
