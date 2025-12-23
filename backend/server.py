@@ -798,8 +798,52 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
     
     await db.otp_sessions.insert_one(session_doc)
     
-    await emit_log(session_id, "info", "🤖 Generating AI voices...")
-    await emit_log(session_id, "success", "✅ Call initiated")
+    # Pre-generate audio files if using ElevenLabs/Deepgram
+    audio_urls = {}
+    if config.voice_provider != "infobip":
+        await emit_log(session_id, "info", f"🤖 Generating {config.voice_provider.upper()} voices...")
+        
+        try:
+            # Generate all audio files in parallel
+            messages_to_generate = {
+                "step1": step1_text,
+                "step2": step2_text,
+                "step3": step3_text,
+                "accepted": accepted_text,
+                "rejected": rejected_text
+            }
+            
+            for msg_type, msg_text in messages_to_generate.items():
+                if config.voice_provider == "elevenlabs":
+                    audio_bytes = await generate_tts_elevenlabs(msg_text, config.voice_name)
+                elif config.voice_provider == "deepgram":
+                    audio_bytes = await generate_tts_deepgram(msg_text, config.voice_name)
+                
+                # Save audio file
+                audio_filename = f"{session_id}_{msg_type}.mp3"
+                audio_path = f"/app/frontend/public/temp_audio/{audio_filename}"
+                os.makedirs("/app/frontend/public/temp_audio", exist_ok=True)
+                
+                with open(audio_path, "wb") as f:
+                    f.write(audio_bytes)
+                
+                # Store URL
+                audio_urls[msg_type] = f"{WEBHOOK_BASE_URL.replace('/api', '')}/temp_audio/{audio_filename}"
+            
+            # Store audio URLs in session
+            await db.otp_sessions.update_one(
+                {"id": session_id},
+                {"$set": {"audio_urls": audio_urls}}
+            )
+            session_doc["audio_urls"] = audio_urls
+            
+            await emit_log(session_id, "success", f"✅ {config.voice_provider.upper()} voices generated!")
+            
+        except Exception as e:
+            logger.error(f"Error generating audio: {e}")
+            await emit_log(session_id, "warning", f"⚠️ Voice generation failed, using Infobip fallback")
+    else:
+        await emit_log(session_id, "success", "✅ Call initiated")
     
     try:
         # Create outbound call
