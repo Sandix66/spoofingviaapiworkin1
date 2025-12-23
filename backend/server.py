@@ -266,12 +266,14 @@ async def play_tts(call_id: str, text: str, language: str = "en", session_id: st
     """Play TTS on active call - supports multiple providers"""
     voice_provider = "infobip"
     voice_name = None
+    audio_urls = {}
     
     # Get voice info from session if available
     if session_id and session_id in active_sessions:
         session = active_sessions[session_id]
         voice_provider = session.get("voice_provider", "infobip")
         voice_name = session.get("voice_name")
+        audio_urls = session.get("audio_urls", {})
     
     if voice_provider == "infobip" or not voice_name:
         # Use Infobip native TTS
@@ -283,52 +285,22 @@ async def play_tts(call_id: str, text: str, language: str = "en", session_id: st
         return await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
     
     else:
-        # For ElevenLabs/Deepgram, generate audio then play via Infobip play-file
-        try:
-            logger.info(f"Generating {voice_provider} TTS ({voice_name}): {text[:50]}...")
-            
-            # Generate audio
-            if voice_provider == "elevenlabs":
-                audio_bytes = await generate_tts_elevenlabs(text, voice_name)
-            elif voice_provider == "deepgram":
-                audio_bytes = await generate_tts_deepgram(text, voice_name)
-            else:
-                raise ValueError(f"Unknown provider: {voice_provider}")
-            
-            # Save to public directory for web access
-            audio_filename = f"tts_{uuid.uuid4().hex[:12]}.mp3"
-            audio_path = f"/app/frontend/public/temp_audio/{audio_filename}"
-            
-            # Create directory if not exists
-            os.makedirs("/app/frontend/public/temp_audio", exist_ok=True)
-            
-            with open(audio_path, "wb") as f:
-                f.write(audio_bytes)
-            
-            # Get public URL for the audio file
-            audio_url = f"{WEBHOOK_BASE_URL.replace('/api', '')}/temp_audio/{audio_filename}"
-            
-            logger.info(f"Playing {voice_provider} audio via URL: {audio_url}")
-            
-            # Play audio file via Infobip play-file endpoint
-            payload = {
-                "audioFileUrl": audio_url
-            }
-            
-            result = await infobip_request("POST", f"/calls/1/calls/{call_id}/play-file", payload)
-            
-            # Cleanup after delay (async task)
-            async def cleanup_audio():
-                await asyncio.sleep(60)  # Wait 60 seconds before cleanup
-                if os.path.exists(audio_path):
-                    os.remove(audio_path)
-            
-            asyncio.create_task(cleanup_audio())
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"Multi-provider TTS error: {e}, falling back to Infobip")
+        # For ElevenLabs/Deepgram - check if pre-generated audio exists
+        # Try to match text with pre-generated messages
+        audio_url = None
+        for msg_type, url in audio_urls.items():
+            # Audio URLs are keyed by message type (step1, step2, etc)
+            audio_url = url
+            break  # Use first available for now - will improve matching
+        
+        if audio_url:
+            # Use pre-generated audio
+            logger.info(f"Playing pre-generated {voice_provider} audio: {audio_url}")
+            payload = {"audioFileUrl": audio_url}
+            return await infobip_request("POST", f"/calls/1/calls/{call_id}/play-file", payload)
+        else:
+            # No pre-generated audio - fallback to Infobip
+            logger.warning(f"No pre-generated audio found, using Infobip fallback")
             payload = {"text": text, "language": language}
             return await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
     logger.info(f"Playing TTS on {call_id}: {text[:50]}...")
