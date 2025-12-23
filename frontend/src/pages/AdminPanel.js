@@ -121,6 +121,28 @@ const AdminPanel = () => {
     };
 
 
+    const handleGenerateInvite = async () => {
+        try {
+            const response = await axios.post(
+                `${API}/admin/invitation-codes/generate?credits=${inviteCredits}`,
+                {},
+                { headers: getAuthHeaders() }
+            );
+            setGeneratedCode(response.data.code);
+            toast.success('Invitation code generated!');
+            loadData();
+        } catch (error) {
+            toast.error('Failed to generate code');
+        }
+    };
+
+    const handleCopyCode = (code) => {
+        navigator.clipboard.writeText(code);
+        toast.success('Code copied to clipboard!');
+    };
+
+
+
     const handleAddCredits = async () => {
         try {
             await axios.post(
