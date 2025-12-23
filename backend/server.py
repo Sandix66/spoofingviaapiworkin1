@@ -313,7 +313,7 @@ async def play_tts(call_id: str, text: str, language: str = "en", session_id: st
             logger.info(f"Playing pre-generated {voice_provider} audio: {audio_url}")
             payload = {
                 "content": {
-                    "audioFileUrl": audio_url,
+                    "fileUrl": audio_url,
                     "type": "URL"
                 }
             }
