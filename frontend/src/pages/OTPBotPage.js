@@ -736,16 +736,40 @@ const OTPBotPage = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-xs uppercase tracking-wider text-gray-500">Call Type</Label>
-                                    <Select defaultValue="login_verification" onValueChange={handleCallTypeChange}>
-                                        <SelectTrigger className="bg-[#0F111A] border-white/10">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-[#12141F] border-white/10">
-                                            {CALL_TYPES.map(type => (
-                                                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="flex gap-2">
+                                        <Select defaultValue="login_verification" onValueChange={handleCallTypeChange} className="flex-1">
+                                            <SelectTrigger className="bg-[#0F111A] border-white/10">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#12141F] border-white/10">
+                                                {/* Default Templates */}
+                                                {CALL_TYPES.map(type => (
+                                                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                                                ))}
+                                                
+                                                {/* Custom Templates */}
+                                                {customTemplates.length > 0 && (
+                                                    <>
+                                                        <div className="px-2 py-1.5 text-xs font-semibold text-gray-400">My Templates</div>
+                                                        {customTemplates.map(template => (
+                                                            <SelectItem key={template.id} value={`custom_${template.id}`}>
+                                                                {template.name} ⭐
+                                                            </SelectItem>
+                                                        ))}
+                                                    </>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <Button
+                                            type="button"
+                                            onClick={handleSaveCurrentAsTemplate}
+                                            size="sm"
+                                            className="bg-purple-600 hover:bg-purple-700"
+                                            disabled={isCallActive}
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                        </Button>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-xs uppercase tracking-wider text-gray-500">Voice Model</Label>
