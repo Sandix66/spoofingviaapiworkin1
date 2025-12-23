@@ -7,6 +7,8 @@ import DashboardPage from './pages/DashboardPage';
 import MakeCallPage from './pages/MakeCallPage';
 import HistoryPage from './pages/HistoryPage';
 import OTPBotPage from './pages/OTPBotPage';
+import AdminPanel from './pages/AdminPanel';
+import ProfilePage from './pages/ProfilePage';
 import DashboardLayout from './components/DashboardLayout';
 import './App.css';
 
