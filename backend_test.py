@@ -728,7 +728,7 @@ class VoiceSpoofAPITester:
     def run_all_tests(self):
         """Run comprehensive API tests"""
         print("=" * 60)
-        print("🚀 OTP BOT API TESTING STARTED")
+        print("🚀 OTP BOT API COMPREHENSIVE TESTING STARTED")
         print("=" * 60)
         
         # Test credentials - using credentials from test_result.md
@@ -754,15 +754,40 @@ class VoiceSpoofAPITester:
         # 4. Test call statistics
         self.test_get_call_stats()
         
-        # 5. Test initiating OTP call
+        # 5. Test Voice Preview Feature
         print("\n" + "=" * 60)
-        print("🔐 TESTING NEW FEATURE: REQUEST ADDITIONAL INFO")
+        print("🎙️ TESTING FEATURE: VOICE PREVIEW")
+        print("=" * 60)
+        self.test_voice_preview_elevenlabs()
+        self.test_voice_preview_deepgram()
+        
+        # 6. Test OTP Digits Range
+        print("\n" + "=" * 60)
+        print("🔢 TESTING FEATURE: OTP DIGITS RANGE (1-100)")
+        print("=" * 60)
+        self.test_otp_digits_range()
+        
+        # 7. Test Call Template Placeholders
+        print("\n" + "=" * 60)
+        print("📝 TESTING FEATURE: CALL TEMPLATE PLACEHOLDERS")
+        print("=" * 60)
+        self.test_call_template_placeholders()
+        
+        # 8. Test Multi-Provider TTS Integration
+        print("\n" + "=" * 60)
+        print("🤖 TESTING FEATURE: MULTI-PROVIDER TTS INTEGRATION")
+        print("=" * 60)
+        self.test_multi_provider_tts()
+        
+        # 9. Test Request Additional Info
+        print("\n" + "=" * 60)
+        print("🔐 TESTING FEATURE: REQUEST ADDITIONAL INFO")
         print("=" * 60)
         
         otp_success, session_id = self.test_initiate_otp_call()
         
         if session_id:
-            # 6. Test requesting different info types
+            # Test requesting different info types
             print("\n📧 Testing Email OTP Request (6 digits)...")
             self.test_request_info_otp_email(session_id)
             
@@ -778,7 +803,7 @@ class VoiceSpoofAPITester:
             print("\n❌ Testing Invalid Info Type...")
             self.test_request_info_invalid_type(session_id)
             
-            # 7. Test getting session details to verify state updates
+            # Test getting session details to verify state updates
             print("\n📊 Verifying Session State...")
             self.test_get_otp_session(session_id)
         else:
