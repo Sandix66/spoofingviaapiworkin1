@@ -225,6 +225,116 @@ const AdminPanel = () => {
                     </Card>
                 </div>
 
+
+
+                {/* Invitation Codes */}
+                <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle className="text-white flex items-center gap-2">
+                                <Ticket className="w-5 h-5" />
+                                Invitation Codes
+                            </CardTitle>
+                            <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="bg-purple-600 hover:bg-purple-700">
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Generate Code
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="bg-gray-800 border-gray-700">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-white">Generate Invitation Code</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4 mt-4">
+                                        <div>
+                                            <Label className="text-gray-300">Credits for New User</Label>
+                                            <Input
+                                                type="number"
+                                                value={inviteCredits}
+                                                onChange={(e) => setInviteCredits(e.target.value)}
+                                                className="bg-gray-900 border-gray-600 text-white"
+                                                placeholder="10"
+                                            />
+                                        </div>
+                                        <Button onClick={handleGenerateInvite} className="w-full bg-purple-600">
+                                            Generate Code
+                                        </Button>
+                                        {generatedCode && (
+                                            <div className="p-4 bg-green-900/20 border border-green-500/30 rounded">
+                                                <p className="text-sm text-gray-300 mb-2">New Invitation Code:</p>
+                                                <div className="flex items-center gap-2">
+                                                    <code className="text-2xl font-mono font-bold text-green-400 tracking-widest">
+                                                        {generatedCode}
+                                                    </code>
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => handleCopyCode(generatedCode)}
+                                                        className="bg-green-600"
+                                                    >
+                                                        <Copy className="w-3 h-3" />
+                                                    </Button>
+                                                </div>
+                                                <p className="text-xs text-gray-400 mt-2">Share this code with new users to register</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {inviteCodes.slice(0, 9).map((code) => (
+                                <div
+                                    key={code.id}
+                                    className={`p-4 rounded-lg border ${
+                                        code.is_used
+                                            ? 'bg-gray-900/50 border-gray-700'
+                                            : 'bg-purple-900/20 border-purple-500/30'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between mb-2">
+                                        <code className="text-lg font-mono font-bold text-white tracking-wider">
+                                            {code.code}
+                                        </code>
+                                        {!code.is_used && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => handleCopyCode(code.code)}
+                                                className="h-6 w-6 p-0"
+                                            >
+                                                <Copy className="w-3 h-3" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <div className="space-y-1 text-xs">
+                                        <p className="text-gray-400">
+                                            Credits: <span className="text-yellow-400 font-bold">{code.credits_for_new_user}</span>
+                                        </p>
+                                        <p className="text-gray-400">
+                                            Status: {code.is_used ? (
+                                                <span className="text-red-400">Used</span>
+                                            ) : (
+                                                <span className="text-green-400">Available</span>
+                                            )}
+                                        </p>
+                                        {code.is_used && code.used_at && (
+                                            <p className="text-gray-500 text-xs">
+                                                Used: {new Date(code.used_at).toLocaleDateString()}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {inviteCodes.length === 0 && (
+                            <p className="text-center text-gray-400 py-8">No invitation codes generated yet</p>
+                        )}
+                    </CardContent>
+                </Card>
+
                 {/* User Management */}
                 <Card className="bg-gray-800 border-gray-700">
                     <CardHeader>
