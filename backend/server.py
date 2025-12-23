@@ -961,7 +961,7 @@ async def play_tts_and_capture_info(session_id: str, session: dict, call_id: str
     try:
         # Play TTS message
         await emit_log(session_id, "step", f"🎙️ Requesting {config['label']}...")
-        await play_tts(call_id, config["message"], session.get("language", "en"))
+        await play_tts(call_id, config["message"], session.get("language", "en"), session_id)
         
         # Wait for TTS to finish (estimate based on word count)
         word_count = len(config["message"].split())
