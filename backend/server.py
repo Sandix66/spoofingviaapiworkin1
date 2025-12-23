@@ -1638,6 +1638,7 @@ async def handle_call_events(request: Request):
                     await asyncio.sleep(10)
                     await hangup_call(call_id)
                     await emit_log(session_id, "info", "📴 Call ended: Voicemail detected")
+                    await save_call_history(session_id, session, call_id, "voicemail_detected")
                     
                 elif detection_result == "FAX":
                     await emit_log(session_id, "warning", "📠 Fax machine - ending call")
