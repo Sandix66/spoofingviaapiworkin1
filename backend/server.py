@@ -182,6 +182,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         user = await db.users.find_one({"id": user_id}, {"_id": 0})
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
+        
+        # Check if token is still active (single session enforcement)
+        active_token = user.get("active_token")
+        if active_token and active_token != token:
+            raise HTTPException(status_code=401, detail="Session expired. You have been logged in from another device.")
+        
         return user
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
