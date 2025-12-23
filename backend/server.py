@@ -31,7 +31,7 @@ INFOBIP_BASE_URL = os.environ.get('INFOBIP_BASE_URL', 'qdnddq.api.infobip.com')
 INFOBIP_CALLS_CONFIG_ID = os.environ.get('INFOBIP_CALLS_CONFIG_ID')
 
 # Webhook base URL
-WEBHOOK_BASE_URL = "https://ivrsession.preview.emergentagent.com/api"
+WEBHOOK_BASE_URL = "https://ivrflow.preview.emergentagent.com/api"
 
 # JWT configuration
 JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'default_secret')
