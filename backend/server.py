@@ -653,9 +653,11 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
     session_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
     
-    # Format messages
+    # Format messages - replace all placeholders
     step1_text = config.step1_message.replace("{name}", config.recipient_name).replace("{service}", config.service_name)
     step2_text = config.step2_message.replace("{digits}", str(config.otp_digits))
+    step3_text = config.step3_message.replace("{name}", config.recipient_name).replace("{service}", config.service_name)
+    accepted_text = config.accepted_message.replace("{name}", config.recipient_name).replace("{service}", config.service_name)
     rejected_text = config.rejected_message.replace("{digits}", str(config.otp_digits))
     
     # Create session
