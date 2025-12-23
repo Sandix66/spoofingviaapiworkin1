@@ -751,6 +751,222 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         created_at=current_user["created_at"]
     )
 
+
+
+# ==================== ADMIN ROUTES ====================
+
+@admin_router.get("/users")
+async def get_all_users(admin: dict = Depends(get_admin_user)):
+    """Get all users (admin only)"""
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    return {"users": users}
+
+@admin_router.post("/users")
+async def create_user(user_data: UserCreate, admin: dict = Depends(get_admin_user)):
+    """Create new user (admin only)"""
+    # Check if email exists
+    existing = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Create user
+    user_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    
+    new_user = {
+        "id": user_id,
+        "email": user_data.email,
+        "password_hash": hash_password(user_data.password),
+        "name": user_data.name,
+        "role": user_data.role,
+        "credits": user_data.credits,
+        "is_active": True,
+        "created_at": now,
+        "created_by": admin["id"]
+    }
+    
+    await db.users.insert_one(new_user)
+    
+    # Log activity
+    await log_activity(admin["id"], "user_created", {"created_user_id": user_id, "email": user_data.email})
+    
+    return {"message": "User created successfully", "user_id": user_id}
+
+@admin_router.put("/users/{user_id}")
+async def update_user(user_id: str, user_data: UserUpdate, admin: dict = Depends(get_admin_user)):
+    """Update user (admin only)"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Build update dict
+    update_data = {}
+    if user_data.name is not None:
+        update_data["name"] = user_data.name
+    if user_data.email is not None:
+        update_data["email"] = user_data.email
+    if user_data.is_active is not None:
+        update_data["is_active"] = user_data.is_active
+    if user_data.credits is not None:
+        update_data["credits"] = user_data.credits
+    
+    if update_data:
+        await db.users.update_one({"id": user_id}, {"$set": update_data})
+        await log_activity(admin["id"], "user_updated", {"updated_user_id": user_id, "changes": update_data})
+    
+    return {"message": "User updated successfully"}
+
+@admin_router.delete("/users/{user_id}")
+async def delete_user(user_id: str, admin: dict = Depends(get_admin_user)):
+    """Delete user (admin only)"""
+    if user_id == admin["id"]:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await log_activity(admin["id"], "user_deleted", {"deleted_user_id": user_id})
+    
+    return {"message": "User deleted successfully"}
+
+@admin_router.post("/users/{user_id}/credits")
+async def add_credits(user_id: str, credit_data: CreditUpdate, admin: dict = Depends(get_admin_user)):
+    """Add or deduct credits (admin only)"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    new_credits = user.get("credits", 0) + credit_data.amount
+    if new_credits < 0:
+        raise HTTPException(status_code=400, detail="Insufficient credits")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"credits": new_credits}}
+    )
+    
+    await log_activity(admin["id"], "credit_added" if credit_data.amount > 0 else "credit_deducted", {
+        "target_user_id": user_id,
+        "amount": credit_data.amount,
+        "new_balance": new_credits,
+        "reason": credit_data.reason
+    })
+    
+    return {"message": "Credits updated", "new_credits": new_credits}
+
+@admin_router.get("/activities")
+async def get_all_activities(limit: int = 100, admin: dict = Depends(get_admin_user)):
+    """Get all user activities (admin only)"""
+    activities = await db.user_activities.find({}, {"_id": 0}).sort("timestamp", -1).limit(limit).to_list(limit)
+    return {"activities": activities}
+
+@admin_router.get("/calls")
+async def get_all_calls(limit: int = 100, admin: dict = Depends(get_admin_user)):
+    """Get all call history (admin only)"""
+    calls = await db.call_history.find({}, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    return {"calls": calls}
+
+@admin_router.get("/stats")
+async def get_admin_stats(admin: dict = Depends(get_admin_user)):
+    """Get dashboard stats (admin only)"""
+    total_users = await db.users.count_documents({})
+    active_users = await db.users.count_documents({"is_active": True})
+    
+    # Calls today
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    total_calls_today = await db.call_history.count_documents({"created_at": {"$gte": today_start}})
+    total_calls_all = await db.call_history.count_documents({})
+    
+    # Credits stats
+    users_list = await db.users.find({}, {"_id": 0, "credits": 1}).to_list(1000)
+    total_credits_distributed = sum(u.get("credits", 0) for u in users_list)
+    
+    calls_list = await db.call_history.find({}, {"_id": 0, "cost_credits": 1}).to_list(10000)
+    total_credits_spent = sum(c.get("cost_credits", 0) for c in calls_list)
+    
+    return {
+        "total_users": total_users,
+        "active_users": active_users,
+        "total_calls_today": total_calls_today,
+        "total_calls_all_time": total_calls_all,
+        "total_credits_distributed": total_credits_distributed,
+        "total_credits_spent": total_credits_spent
+    }
+
+# ==================== USER PROFILE ROUTES ====================
+
+@user_router.get("/profile")
+async def get_profile(current_user: dict = Depends(get_current_user)):
+    """Get current user profile"""
+    return UserResponse(
+        id=current_user["id"],
+        email=current_user["email"],
+        name=current_user["name"],
+        role=current_user.get("role", "user"),
+        credits=current_user.get("credits", 0),
+        is_active=current_user.get("is_active", True),
+        created_at=current_user["created_at"]
+    )
+
+@user_router.put("/password")
+async def change_password(password_data: PasswordChange, current_user: dict = Depends(get_current_user)):
+    """Change password"""
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+    if not verify_password(password_data.current_password, user["password_hash"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    new_password_hash = hash_password(password_data.new_password)
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"password_hash": new_password_hash}}
+    )
+    
+    await log_activity(current_user["id"], "password_changed", {})
+    
+    return {"message": "Password changed successfully"}
+
+@user_router.get("/calls")
+async def get_user_calls(limit: int = 50, current_user: dict = Depends(get_current_user)):
+    """Get user's own call history"""
+    calls = await db.call_history.find(
+        {"user_id": current_user["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    return {"calls": calls}
+
+@user_router.get("/credits")
+async def get_user_credits(current_user: dict = Depends(get_current_user)):
+    """Get user's current credits"""
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "credits": 1})
+    return {"credits": user.get("credits", 0)}
+
+@user_router.get("/stats")
+async def get_user_stats(current_user: dict = Depends(get_current_user)):
+    """Get user's statistics"""
+    pipeline = [
+        {"$match": {"user_id": current_user["id"]}},
+        {"$group": {
+            "_id": None,
+            "total_calls": {"$sum": 1},
+            "total_duration": {"$sum": "$duration_seconds"},
+            "total_spent": {"$sum": "$cost_credits"},
+            "successful": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}}
+        }}
+    ]
+    
+    result = await db.call_history.aggregate(pipeline).to_list(1)
+    if result:
+        stats = result[0]
+        return {
+            "total_calls": stats.get("total_calls", 0),
+            "total_duration_seconds": stats.get("total_duration", 0),
+            "total_credits_spent": stats.get("total_spent", 0),
+            "successful_calls": stats.get("successful", 0)
+        }
+    
+    return {"total_calls": 0, "total_duration_seconds": 0, "total_credits_spent": 0, "successful_calls": 0}
+
 # ==================== OTP BOT ROUTES ====================
 
 @otp_router.post("/initiate-call")
