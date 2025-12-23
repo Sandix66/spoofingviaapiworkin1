@@ -747,6 +747,76 @@ async def login(credentials: UserLogin):
         )
     )
 
+
+@auth_router.post("/register", response_model=TokenResponse)
+async def register_with_invite(email: EmailStr, password: str, name: str, invitation_code: str):
+    """Public registration with invitation code"""
+    # Validate invitation code
+    invite = await db.invitation_codes.find_one({"code": invitation_code}, {"_id": 0})
+    
+    if not invite:
+        raise HTTPException(status_code=400, detail="Invalid invitation code")
+    
+    if invite.get("is_used"):
+        raise HTTPException(status_code=400, detail="Invitation code already used")
+    
+    # Check if email exists
+    existing = await db.users.find_one({"email": email}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Create user with credits from invitation
+    user_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    
+    new_user = {
+        "id": user_id,
+        "email": email,
+        "password_hash": hash_password(password),
+        "name": name,
+        "role": "user",
+        "credits": invite.get("credits_for_new_user", 10),
+        "is_active": True,
+        "created_at": now,
+        "created_by": invite.get("created_by"),
+        "invited_by_code": invitation_code
+    }
+    
+    await db.users.insert_one(new_user)
+    
+    # Mark invitation code as used
+    await db.invitation_codes.update_one(
+        {"code": invitation_code},
+        {"$set": {
+            "is_used": True,
+            "used_by": user_id,
+            "used_at": now
+        }}
+    )
+    
+    # Log activity
+    await log_activity(user_id, "user_registered", {
+        "invitation_code": invitation_code,
+        "invited_by": invite.get("created_by")
+    })
+    
+    # Auto-login
+    access_token = create_access_token({"sub": user_id})
+    
+    return TokenResponse(
+        access_token=access_token,
+        user=UserResponse(
+            id=new_user["id"],
+            email=new_user["email"],
+            name=new_user["name"],
+            role=new_user["role"],
+            credits=new_user["credits"],
+            is_active=new_user["is_active"],
+            created_at=new_user["created_at"]
+        )
+    )
+
+
 @auth_router.get("/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
     return UserResponse(
