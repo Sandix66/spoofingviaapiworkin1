@@ -1229,6 +1229,65 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
             "no_answer": stats.get("no_answer", 0),
             "voicemail": stats.get("voicemail", 0),
             "fax": stats.get("fax", 0),
+
+
+# ==================== CUSTOM TEMPLATES ROUTES ====================
+
+@user_router.get("/templates")
+async def get_user_templates(current_user: dict = Depends(get_current_user)):
+    """Get user's custom templates"""
+    templates = await db.custom_templates.find(
+        {"user_id": current_user["id"]},
+        {"_id": 0}
+    ).to_list(100)
+    return {"templates": templates}
+
+@user_router.post("/templates")
+async def create_template(
+    name: str,
+    step1_message: str,
+    step2_message: str,
+    step3_message: str,
+    accepted_message: str,
+    rejected_message: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create custom template"""
+    template_id = str(uuid.uuid4())
+    
+    template_doc = {
+        "id": template_id,
+        "user_id": current_user["id"],
+        "name": name,
+        "step1_message": step1_message,
+        "step2_message": step2_message,
+        "step3_message": step3_message,
+        "accepted_message": accepted_message,
+        "rejected_message": rejected_message,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.custom_templates.insert_one(template_doc)
+    await log_activity(current_user["id"], "template_created", {"template_id": template_id, "name": name})
+    
+    return {"message": "Template created", "template_id": template_id}
+
+@user_router.delete("/templates/{template_id}")
+async def delete_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete custom template (only own templates)"""
+    template = await db.custom_templates.find_one({"id": template_id}, {"_id": 0})
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    if template.get("user_id") != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Cannot delete other user's template")
+    
+    await db.custom_templates.delete_one({"id": template_id})
+    await log_activity(current_user["id"], "template_deleted", {"template_id": template_id})
+    
+    return {"message": "Template deleted"}
+
             "beep": stats.get("beep", 0),
             "music": stats.get("music", 0),
             "otp_captured": otp_count,
