@@ -1730,6 +1730,7 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
     session_doc = {
         "id": session_id,
         "user_id": current_user["id"],
+        "user_email": current_user["email"],
         "using_plan": using_plan,
         "plan_id": active_plan.get("id") if active_plan else None,
         "recipient_number": config.recipient_number,
