@@ -747,6 +747,18 @@ async def login(credentials: UserLogin):
     )
 
 
+@auth_router.post("/logout")
+async def logout(current_user: dict = Depends(get_current_user)):
+    """Logout - clear active token"""
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$unset": {"active_token": ""}}
+    )
+    await log_activity(current_user["id"], "logout", {})
+    return {"message": "Logged out successfully"}
+
+
+
 @auth_router.post("/register", response_model=TokenResponse)
 async def register_with_invite(user_data: UserRegister):
     """Public registration with invitation code"""
