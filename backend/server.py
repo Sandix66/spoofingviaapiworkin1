@@ -840,7 +840,7 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
             )
             session_doc["audio_urls"] = audio_urls
             
-            await emit_log(session_id, "success", f"✅ {config.voice_provider.upper()} voices generated!")
+            await emit_log(session_id, "success", f"✅ {provider_emoji} voices generated!")
             
         except Exception as e:
             logger.error(f"Error generating audio: {e}")
