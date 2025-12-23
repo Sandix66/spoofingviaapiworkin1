@@ -940,10 +940,7 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
         active_sessions[session_id]["otp_digits_collected"] = ""
         active_sessions[session_id]["step1_processed_at"] = datetime.now(timezone.utc).isoformat()
         
-        # Small delay to ensure state is fully updated before any new DTMF
-        await asyncio.sleep(1)
-        
-        # Play Step 2 with retry (x2)
+        # Play Step 2 with retry (x2) - immediately without delay
         asyncio.create_task(play_step2_with_retry(session_id, session, call_id, otp_digits))
         
     elif current_step == 2 and status in ["step2", "waiting_pin"]:
