@@ -77,32 +77,13 @@ const LoginPage = () => {
 
                 {/* Auth Card */}
                 <Card className="glass border-white/5 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                    <Tabs defaultValue="login" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 bg-[#0F111A]">
-                            <TabsTrigger 
-                                value="login" 
-                                data-testid="login-tab"
-                                className="data-[state=active]:bg-violet-600 data-[state=active]:text-white"
-                            >
-                                Masuk
-                            </TabsTrigger>
-                            <TabsTrigger 
-                                value="register"
-                                data-testid="register-tab"
-                                className="data-[state=active]:bg-violet-600 data-[state=active]:text-white"
-                            >
-                                Daftar
-                            </TabsTrigger>
-                        </TabsList>
-
-                        {/* Login Tab */}
-                        <TabsContent value="login">
-                            <CardHeader className="pb-4">
-                                <CardTitle className="text-xl">Selamat Datang</CardTitle>
-                                <CardDescription>Masuk ke akun Anda</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <form onSubmit={handleLogin} className="space-y-4">
+                    {/* Login Form */}
+                    <CardHeader className="pb-4">
+                        <CardTitle className="text-xl">Selamat Datang</CardTitle>
+                        <CardDescription>Masuk ke akun Anda</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleLogin} className="space-y-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="login-email">Email</Label>
                                         <Input
