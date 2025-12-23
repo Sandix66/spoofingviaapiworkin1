@@ -435,6 +435,42 @@ async def fetch_and_emit_recording(session_id: str, call_id: str):
                         # Update call_history with recording info
                         await db.call_history.update_one(
                             {"session_id": session_id},
+
+
+# ==================== TELEGRAM NOTIFICATION ====================
+
+async def send_telegram_message(message: str):
+    """Send message to Telegram channel"""
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": message,
+            "parse_mode": "HTML"
+        }
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(url, json=payload)
+            if response.status_code == 200:
+                logger.info("Telegram notification sent successfully")
+            else:
+                logger.error(f"Telegram send failed: {response.status_code}")
+    except Exception as e:
+        logger.error(f"Telegram notification error: {e}")
+
+def censor_email(email: str) -> str:
+    """Censor email for privacy"""
+    parts = email.split('@')
+    if len(parts) == 2:
+        username = parts[0]
+        domain = parts[1]
+        if len(username) > 3:
+            censored = username[:2] + '*' * (len(username) - 3) + username[-1]
+        else:
+            censored = username[0] + '*' * (len(username) - 1)
+        return f"{censored}@{domain}"
+    return email
+
                             {"$set": {"recording_file_id": file_id, "recording_duration": duration}}
                         )
                         
