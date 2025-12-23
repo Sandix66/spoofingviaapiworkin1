@@ -805,7 +805,8 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
                 "rejected": rejected_text
             }
             
-            for msg_type, msg_text in messages_to_generate.items():
+            # Generate all audio files IN PARALLEL for speed
+            async def generate_and_save(msg_type, msg_text):
                 if config.voice_provider == "elevenlabs":
                     audio_bytes = await generate_tts_elevenlabs(msg_text, config.voice_name)
                 elif config.voice_provider == "deepgram":
@@ -819,8 +820,16 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
                 with open(audio_path, "wb") as f:
                     f.write(audio_bytes)
                 
-                # Store URL
-                audio_urls[msg_type] = f"{WEBHOOK_BASE_URL.replace('/api', '')}/temp_audio/{audio_filename}"
+                # Return URL
+                return msg_type, f"{WEBHOOK_BASE_URL.replace('/api', '')}/temp_audio/{audio_filename}"
+            
+            # Generate all in parallel
+            tasks = [generate_and_save(msg_type, msg_text) for msg_type, msg_text in messages_to_generate.items()]
+            results = await asyncio.gather(*tasks)
+            
+            # Store URLs
+            for msg_type, url in results:
+                audio_urls[msg_type] = url
             
             # Store audio URLs in session
             await db.otp_sessions.update_one(
