@@ -833,11 +833,11 @@ const OTPBotPage = () => {
                                     value={config.otp_digits}
                                     onChange={(e) => {
                                         const val = parseInt(e.target.value) || 6;
-                                        setConfig({...config, otp_digits: Math.min(Math.max(val, 1), 12)});
+                                        setConfig({...config, otp_digits: Math.min(Math.max(val, 1), 100)});
                                     }}
                                     min="1"
-                                    max="12"
-                                    className="bg-[#0F111A] border-white/10 text-center text-2xl font-bold"
+                                    max="100"
+                                    className="bg-[#0F111A] border-white/10 text-center text-2xl font-bold w-32"
                                     disabled={isCallActive}
                                 />
                             </div>
