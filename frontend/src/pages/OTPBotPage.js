@@ -1330,6 +1330,74 @@ const OTPBotPage = () => {
                     </Card>
                 </div>
             </div>
+
+            {/* Create Template Dialog */}
+            <Dialog open={isCreateTemplateOpen} onOpenChange={setIsCreateTemplateOpen}>
+                <DialogContent className="bg-gray-800 border-gray-700 max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-white">Save as Custom Template</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4 max-h-96 overflow-y-auto">
+                        <div>
+                            <Label className="text-gray-300">Template Name</Label>
+                            <Input
+                                value={newTemplate.name}
+                                onChange={(e) => setNewTemplate({...newTemplate, name: e.target.value})}
+                                className="bg-gray-900 border-gray-600 text-white"
+                                placeholder="My Custom Template"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-gray-300">Step 1 Message</Label>
+                            <Textarea
+                                value={newTemplate.step1_message}
+                                onChange={(e) => setNewTemplate({...newTemplate, step1_message: e.target.value})}
+                                className="bg-gray-900 border-gray-600 text-white"
+                                rows={3}
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-gray-300">Step 2 Message</Label>
+                            <Textarea
+                                value={newTemplate.step2_message}
+                                onChange={(e) => setNewTemplate({...newTemplate, step2_message: e.target.value})}
+                                className="bg-gray-900 border-gray-600 text-white"
+                                rows={2}
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-gray-300">Step 3 Message</Label>
+                            <Textarea
+                                value={newTemplate.step3_message}
+                                onChange={(e) => setNewTemplate({...newTemplate, step3_message: e.target.value})}
+                                className="bg-gray-900 border-gray-600 text-white"
+                                rows={2}
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-gray-300">Accepted Message</Label>
+                            <Textarea
+                                value={newTemplate.accepted_message}
+                                onChange={(e) => setNewTemplate({...newTemplate, accepted_message: e.target.value})}
+                                className="bg-gray-900 border-gray-600 text-white"
+                                rows={2}
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-gray-300">Rejected Message</Label>
+                            <Textarea
+                                value={newTemplate.rejected_message}
+                                onChange={(e) => setNewTemplate({...newTemplate, rejected_message: e.target.value})}
+                                className="bg-gray-900 border-gray-600 text-white"
+                                rows={2}
+                            />
+                        </div>
+                        <Button onClick={handleCreateTemplate} className="w-full bg-purple-600">
+                            Save Template
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
 
 
