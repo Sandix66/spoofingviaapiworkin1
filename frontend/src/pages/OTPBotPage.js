@@ -281,6 +281,7 @@ const OTPBotPage = () => {
     };
 
     const handleCallTypeChange = (value) => {
+        setSelectedTemplate(value);
         const template = CALL_TEMPLATES[value];
         if (template) {
             setConfig(prev => ({
