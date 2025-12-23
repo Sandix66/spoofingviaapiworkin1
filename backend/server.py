@@ -1590,14 +1590,14 @@ async def handle_call_events(request: Request):
 
         
         elif event_type == "MACHINE_DETECTION_FINISHED":
-            # AMD detection finished - get result
-            detection_result = body.get("machineDetection", {}).get("detectionResult", "")
-            confidence = body.get("machineDetection", {}).get("confidence", "")
+            # AMD detection finished - get result from properties
+            detection_result = body.get("properties", {}).get("detectionResult", "")
+            confidence_rating = body.get("properties", {}).get("confidenceRating", {})
             
-            logger.info(f"AMD FINISHED: result={detection_result}, confidence={confidence}")
+            logger.info(f"AMD FINISHED: result={detection_result}, confidence={confidence_rating}")
             
             if detection_result:
-                await emit_log(session_id, "amd", f"🤖 AMD: {detection_result}", {"result": detection_result, "confidence": confidence})
+                await emit_log(session_id, "amd", f"🤖 AMD Result: {detection_result}", {"result": detection_result})
                 
                 # Update session with AMD result
                 await db.otp_sessions.update_one(
@@ -1613,25 +1613,36 @@ async def handle_call_events(request: Request):
                     await db.otp_sessions.update_one({"id": session_id}, {"$set": {"status": "voicemail_detected"}})
                     await asyncio.sleep(10)
                     await hangup_call(call_id)
+                    await emit_log(session_id, "info", "📴 Call ended: Voicemail detected")
                     
                 elif detection_result == "FAX":
                     await emit_log(session_id, "warning", "📠 Fax machine - ending call")
                     await db.otp_sessions.update_one({"id": session_id}, {"$set": {"status": "fax_detected"}})
                     await hangup_call(call_id)
+                    await emit_log(session_id, "info", "📴 Call ended: Fax detected")
                     
                 elif detection_result == "BEEP":
                     await emit_log(session_id, "warning", "📯 Beep detected - ending call in 10 seconds")
                     await db.otp_sessions.update_one({"id": session_id}, {"$set": {"status": "beep_detected"}})
                     await asyncio.sleep(10)
                     await hangup_call(call_id)
+                    await emit_log(session_id, "info", "📴 Call ended: Beep detected")
                     
                 elif detection_result == "SILENCE":
                     await emit_log(session_id, "warning", "🔇 Silence detected - continuing call")
                     # Continue normal flow
                     
-                elif detection_result == "ERROR":
-                    await emit_log(session_id, "warning", "⚠️ AMD error - continuing call")
+                elif detection_result == "NOISE":
+                    await emit_log(session_id, "warning", "📢 Noise detected - continuing call")
                     # Continue normal flow
+                    
+                elif detection_result == "MUSIC":
+                    await emit_log(session_id, "warning", "🎵 Music detected - ending call")
+                    await db.otp_sessions.update_one({"id": session_id}, {"$set": {"status": "music_detected"}})
+                    await hangup_call(call_id)
+                    
+                elif detection_result == "OTHER":
+                    await emit_log(session_id, "warning", "❓ Unknown detection - continuing call")
         
         elif event_type == "MACHINE_DETECTION_FAILED":
             await emit_log(session_id, "warning", "⚠️ AMD detection failed - continuing call")
