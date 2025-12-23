@@ -33,6 +33,8 @@ const AdminPanel = () => {
     });
 
     const [creditAmount, setCreditAmount] = useState(0);
+    const [newPassword, setNewPassword] = useState('');
+
 
     const getAuthHeaders = () => {
         const token = localStorage.getItem('token');
