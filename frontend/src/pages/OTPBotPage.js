@@ -173,6 +173,17 @@ const OTPBotPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const logsEndRef = useRef(null);
+    const [customTemplates, setCustomTemplates] = useState([]);
+    const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
+    const [newTemplate, setNewTemplate] = useState({
+        name: '',
+        step1_message: '',
+        step2_message: '',
+        step3_message: '',
+        accepted_message: '',
+        rejected_message: ''
+    });
+
     const audioRef = useRef(null);
     const durationInterval = useRef(null);
 
