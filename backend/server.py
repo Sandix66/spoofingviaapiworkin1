@@ -883,6 +883,36 @@ async def reset_user_password(user_id: str, new_password: str, admin: dict = Dep
         "target_user_id": user_id,
         "target_email": user.get("email")
     })
+
+
+@admin_router.post("/invitation-codes/generate")
+async def generate_invitation_code(credits: float = 10, admin: dict = Depends(get_admin_user)):
+    """Generate invitation code (admin only)"""
+    code = str(uuid.uuid4())[:8].upper()  # Short code
+    
+    invite_doc = {
+        "id": str(uuid.uuid4()),
+        "code": code,
+        "created_by": admin["id"],
+        "created_by_role": "admin",
+        "credits_for_new_user": credits,
+        "is_used": False,
+        "used_by": None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "used_at": None
+    }
+    
+    await db.invitation_codes.insert_one(invite_doc)
+    await log_activity(admin["id"], "invitation_code_generated", {"code": code, "credits": credits})
+    
+    return {"code": code, "credits": credits}
+
+@admin_router.get("/invitation-codes")
+async def get_invitation_codes(admin: dict = Depends(get_admin_user)):
+    """Get all invitation codes (admin only)"""
+    codes = await db.invitation_codes.find({}, {"_id": 0}).sort("created_at", -1).limit(100).to_list(100)
+    return {"codes": codes}
+
     
     return {"message": "Password reset successfully"}
 
