@@ -268,12 +268,18 @@ async def play_tts(call_id: str, text: str, language: str = "en", session_id: st
     voice_name = None
     audio_urls = {}
     
+    # Debug logging
+    logger.info(f"play_tts called: call_id={call_id}, session_id={session_id}")
+    
     # Get voice info from session if available
     if session_id and session_id in active_sessions:
         session = active_sessions[session_id]
         voice_provider = session.get("voice_provider", "infobip")
         voice_name = session.get("voice_name")
         audio_urls = session.get("audio_urls", {})
+        logger.info(f"Session found: provider={voice_provider}, voice={voice_name}, audio_urls_count={len(audio_urls)}")
+    else:
+        logger.warning(f"Session not found in active_sessions. session_id={session_id}, active={list(active_sessions.keys())[:3]}")
     
     if voice_provider == "infobip" or not voice_name:
         # Use Infobip native TTS
