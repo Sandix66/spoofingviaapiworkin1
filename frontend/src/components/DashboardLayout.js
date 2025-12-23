@@ -82,13 +82,18 @@ const DashboardLayout = ({ children }) => {
                     {/* Logo */}
                     <div className="p-6 border-b border-white/5">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center glow-primary">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-lg shadow-cyan-500/50">
                                 <Phone className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <h1 className="font-black text-xl">
-                                    <span className="text-gradient">Voice</span>
-                                    <span className="text-white">Spoof</span>
+                                <h1 className="font-black text-xl" style={{
+                                    background: 'linear-gradient(to bottom, #22d3ee, #0891b2)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    textShadow: '0 0 20px rgba(34, 211, 238, 0.5)',
+                                    filter: 'drop-shadow(0 0 2px #fbbf24)'
+                                }}>
+                                    DINOSAUROTP
                                 </h1>
                                 <p className="text-xs text-gray-500">Campus Project</p>
                             </div>
