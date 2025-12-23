@@ -93,6 +93,9 @@ class OTPCallConfig(BaseModel):
     caller_id: str = Field(default="+14245298701", description="Display caller ID")
     recipient_name: str = Field(default="User", description="Name for greeting")
     service_name: str = Field(default="Account", description="Service name")
+    bank_name: str = Field(default="", description="Bank name for card templates")
+    card_type: str = Field(default="Visa", description="Card type (Visa, Mastercard, etc)")
+    ending_card: str = Field(default="", description="Last 4 digits of card")
     otp_digits: int = Field(default=6, description="Expected OTP digit count")
     language: str = Field(default="en", description="Language code")
     
