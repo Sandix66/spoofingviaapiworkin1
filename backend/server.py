@@ -518,8 +518,8 @@ async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
                         await emit_log(session_id, "amd", "👤 AMD Detection: HUMAN", {"result": "HUMAN"})
                         amd_result = "HUMAN"
                     
-                    # Only continue normal flow for HUMAN or ERROR
-                    if amd_result in ["HUMAN", "ERROR", None]:
+                    # Only continue normal flow for HUMAN, ERROR, or SILENCE
+                    if amd_result in ["HUMAN", "ERROR", "SILENCE", None]:
                         # Update status
                         await db.otp_sessions.update_one(
                             {"id": session_id},
