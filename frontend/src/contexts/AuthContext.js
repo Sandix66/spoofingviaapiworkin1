@@ -19,6 +19,25 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
 
+    // Setup axios interceptor untuk handle 401
+    useEffect(() => {
+        const interceptor = axios.interceptors.response.use(
+            response => response,
+            error => {
+                if (error.response?.status === 401) {
+                    // Auto-logout on 401
+                    localStorage.removeItem('token');
+                    setToken(null);
+                    setUser(null);
+                    window.location.href = '/';
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        return () => axios.interceptors.response.eject(interceptor);
+    }, []);
+
     useEffect(() => {
         if (token) {
             fetchUser();
