@@ -344,8 +344,8 @@ const AdminPanel = () => {
                                 );
                             })}
                         </div>
-                        {inviteCodes.length === 0 && (
-                            <p className="text-center text-gray-400 py-8">No invitation codes generated yet</p>
+                        {inviteCodes.filter(c => !c.is_used).length === 0 && (
+                            <p className="text-center text-gray-400 py-8">No available invitation codes</p>
                         )}
                     </CardContent>
                 </Card>
