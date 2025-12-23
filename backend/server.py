@@ -262,20 +262,31 @@ async def create_outbound_call(to_number: str, from_number: str) -> dict:
     
     return await infobip_request("POST", "/calls/1/calls", payload)
 
-async def play_tts(call_id: str, text: str, language: str = "en", voice_name: str = None, voice_provider: str = "infobip"):
+async def play_tts(call_id: str, text: str, language: str = "en", session_id: str = None):
     """Play TTS on active call - supports multiple providers"""
+    voice_provider = "infobip"
+    voice_name = None
+    
+    # Get voice info from session if available
+    if session_id and session_id in active_sessions:
+        session = active_sessions[session_id]
+        voice_provider = session.get("voice_provider", "infobip")
+        voice_name = session.get("voice_name")
+    
     if voice_provider == "infobip" or not voice_name:
         # Use Infobip native TTS
         payload = {
             "text": text,
             "language": language
         }
-        logger.info(f"Playing TTS on {call_id}: {text[:50]}...")
+        logger.info(f"Playing Infobip TTS on {call_id}: {text[:50]}...")
         return await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
     
     else:
         # For ElevenLabs/Deepgram, generate audio then play via Infobip
         try:
+            logger.info(f"Generating {voice_provider} TTS ({voice_name}): {text[:50]}...")
+            
             # Generate audio
             if voice_provider == "elevenlabs":
                 audio_bytes = await generate_tts_elevenlabs(text, voice_name)
@@ -291,7 +302,7 @@ async def play_tts(call_id: str, text: str, language: str = "en", voice_name: st
             
             # Upload to accessible URL or use Infobip playAudio
             # For now, fallback to Infobip TTS if audio playback not supported
-            logger.warning(f"Generated {voice_provider} audio, but playback via call not yet implemented. Using Infobip fallback.")
+            logger.warning(f"Generated {voice_provider} audio ({len(audio_bytes)} bytes), but playback via call not yet implemented. Using Infobip fallback.")
             
             # Cleanup
             if os.path.exists(temp_file):
