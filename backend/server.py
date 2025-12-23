@@ -164,6 +164,12 @@ async def join_session(sid, data):
     if session_id:
         await sio.enter_room(sid, session_id)
         logger.info(f"Client {sid} joined session {session_id}")
+        
+        # Send existing logs to the client
+        session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
+        if session and session.get("logs"):
+            for log_entry in session["logs"]:
+                await sio.emit('call_log', log_entry, room=sid)
 
 async def emit_log(session_id: str, log_type: str, message: str, data: dict = None):
     """Emit log event to all clients in a session"""
