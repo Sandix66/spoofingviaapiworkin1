@@ -81,10 +81,19 @@ user_router = APIRouter(prefix="/user", tags=["User Profile"])
 
 # ==================== MODELS ====================
 
+from models import (
+    UserCreate as UserCreateModel,
+    UserUpdate,
+    PasswordChange,
+    CreditUpdate
+)
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
     name: str
+    role: str = "user"
+    credits: float = 0
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -99,6 +108,7 @@ class UserResponse(BaseModel):
     credits: float = 0
     is_active: bool = True
     created_at: str
+    created_by: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str
