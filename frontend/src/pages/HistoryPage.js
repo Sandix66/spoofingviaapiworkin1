@@ -148,9 +148,9 @@ const HistoryPage = () => {
                                 </SelectTrigger>
                                 <SelectContent className="bg-[#12141F] border-white/10">
                                     <SelectItem value="all">All</SelectItem>
-                                    <SelectItem value="completed">Selesai</SelectItem>
-                                    <SelectItem value="initiated">Diinisiasi</SelectItem>
-                                    <SelectItem value="failed">Gagal</SelectItem>
+                                    <SelectItem value="completed">Completed</SelectItem>
+                                    <SelectItem value="initiated">Initiated</SelectItem>
+                                    <SelectItem value="failed">Failed</SelectItem>
                                     <SelectItem value="pending">Pending</SelectItem>
                                 </SelectContent>
                             </Select>
