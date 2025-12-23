@@ -283,7 +283,7 @@ async def play_tts(call_id: str, text: str, language: str = "en", session_id: st
         return await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
     
     else:
-        # For ElevenLabs/Deepgram, generate audio then play via Infobip
+        # For ElevenLabs/Deepgram, generate audio then play via Infobip play-file
         try:
             logger.info(f"Generating {voice_provider} TTS ({voice_name}): {text[:50]}...")
             
@@ -295,22 +295,37 @@ async def play_tts(call_id: str, text: str, language: str = "en", session_id: st
             else:
                 raise ValueError(f"Unknown provider: {voice_provider}")
             
-            # Save temp file
-            temp_file = f"/tmp/tts_{call_id}_{uuid.uuid4().hex[:8]}.mp3"
-            with open(temp_file, "wb") as f:
+            # Save to public directory for web access
+            audio_filename = f"tts_{uuid.uuid4().hex[:12]}.mp3"
+            audio_path = f"/app/frontend/public/temp_audio/{audio_filename}"
+            
+            # Create directory if not exists
+            os.makedirs("/app/frontend/public/temp_audio", exist_ok=True)
+            
+            with open(audio_path, "wb") as f:
                 f.write(audio_bytes)
             
-            # Upload to accessible URL or use Infobip playAudio
-            # For now, fallback to Infobip TTS if audio playback not supported
-            logger.warning(f"Generated {voice_provider} audio ({len(audio_bytes)} bytes), but playback via call not yet implemented. Using Infobip fallback.")
+            # Get public URL for the audio file
+            audio_url = f"{WEBHOOK_BASE_URL.replace('/api', '')}/temp_audio/{audio_filename}"
             
-            # Cleanup
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
+            logger.info(f"Playing {voice_provider} audio via URL: {audio_url}")
             
-            # Fallback to Infobip TTS for now
-            payload = {"text": text, "language": language}
-            return await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
+            # Play audio file via Infobip play-file endpoint
+            payload = {
+                "audioFileUrl": audio_url
+            }
+            
+            result = await infobip_request("POST", f"/calls/1/calls/{call_id}/play-file", payload)
+            
+            # Cleanup after delay (async task)
+            async def cleanup_audio():
+                await asyncio.sleep(60)  # Wait 60 seconds before cleanup
+                if os.path.exists(audio_path):
+                    os.remove(audio_path)
+            
+            asyncio.create_task(cleanup_audio())
+            
+            return result
             
         except Exception as e:
             logger.error(f"Multi-provider TTS error: {e}, falling back to Infobip")
