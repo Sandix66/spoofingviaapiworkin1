@@ -16,6 +16,7 @@ const ProfilePage = () => {
     const [profile, setProfile] = useState(null);
     const [stats, setStats] = useState({});
     const [calls, setCalls] = useState([]);
+    const [myInvite, setMyInvite] = useState(null);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,15 +33,17 @@ const ProfilePage = () => {
 
     const loadData = async () => {
         try {
-            const [profileRes, statsRes, callsRes] = await Promise.all([
+            const [profileRes, statsRes, callsRes, inviteRes] = await Promise.all([
                 axios.get(`${API}/user/profile`, { headers: getAuthHeaders() }),
                 axios.get(`${API}/user/stats`, { headers: getAuthHeaders() }),
-                axios.get(`${API}/user/calls?limit=20`, { headers: getAuthHeaders() })
+                axios.get(`${API}/user/calls?limit=20`, { headers: getAuthHeaders() }),
+                axios.get(`${API}/user/my-invite`, { headers: getAuthHeaders() })
             ]);
 
             setProfile(profileRes.data);
             setStats(statsRes.data || {});
             setCalls(callsRes.data.calls || []);
+            setMyInvite(inviteRes.data.code);
         } catch (error) {
             toast.error('Failed to load profile');
         }
