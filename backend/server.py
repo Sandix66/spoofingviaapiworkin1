@@ -520,7 +520,15 @@ async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
                     ringing_logged = True
                 
                 if call_state == "ESTABLISHED":
-                    # Call answered - wait for AMD result
+                    # Call answered - record start time and wait for AMD result
+                    call_start_time = datetime.now(timezone.utc).isoformat()
+                    await db.otp_sessions.update_one(
+                        {"id": session_id},
+                        {"$set": {"call_start_time": call_start_time}}
+                    )
+                    if session_id in active_sessions:
+                        active_sessions[session_id]["call_start_time"] = call_start_time
+                    
                     await emit_log(session_id, "answered", "🤳 Call Answered - analyzing...")
                     
                     # Wait for AMD webhook event (max 6 seconds)
