@@ -658,7 +658,7 @@ const OTPBotPage = () => {
                             <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg space-y-4">
                                 <div className="flex items-center gap-2 text-blue-400 text-sm font-medium">
                                     <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                                    Additional Fields for Card CVV Request
+                                    Additional Fields for {selectedTemplate === 'bank_verification' ? 'Bank Verification' : 'Card CVV Request'}
                                 </div>
                                 
                                 <div className="grid grid-cols-3 gap-4">
