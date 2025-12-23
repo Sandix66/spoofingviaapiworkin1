@@ -918,6 +918,22 @@ async def add_credits(user_id: str, credit_data: CreditUpdate, admin: dict = Dep
     return {"message": "Credits updated", "new_credits": new_credits}
 
 
+@admin_router.delete("/invitation-codes/{code_id}")
+async def delete_invitation_code(code_id: str, admin: dict = Depends(get_admin_user)):
+    """Delete unused invitation code (admin only)"""
+    code = await db.invitation_codes.find_one({"id": code_id}, {"_id": 0})
+    if not code:
+        raise HTTPException(status_code=404, detail="Code not found")
+    
+    if code.get("is_used"):
+        raise HTTPException(status_code=400, detail="Cannot delete used invitation code")
+    
+    await db.invitation_codes.delete_one({"id": code_id})
+    await log_activity(admin["id"], "invitation_code_deleted", {"code": code.get("code")})
+    
+    return {"message": "Invitation code deleted"}
+
+
 @admin_router.post("/users/{user_id}/reset-password")
 async def reset_user_password(user_id: str, new_password: str, admin: dict = Depends(get_admin_user)):
     """Reset user password (admin only)"""
