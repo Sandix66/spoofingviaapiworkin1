@@ -38,12 +38,6 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const VOICE_MODELS = [
-    // Infobip Voices
-    { value: 'Joanna', label: '🎙️ Joanna (US English Female)', provider: 'infobip' },
-    { value: 'Matthew', label: '🎙️ Matthew (US English Male)', provider: 'infobip' },
-    { value: 'Amy', label: '🎙️ Amy (UK English Female)', provider: 'infobip' },
-    { value: 'Brian', label: '🎙️ Brian (UK English Male)', provider: 'infobip' },
-    
     // ElevenLabs Voices - Using actual voice IDs
     { value: '21m00Tcm4TlvDq8ikWAM', label: '⚡ Rachel (US Female, Calm)', provider: 'elevenlabs' },
     { value: 'pNInz6obpgDQGcFmaJgB', label: '⚡ Adam (US Male, Deep)', provider: 'elevenlabs' },
