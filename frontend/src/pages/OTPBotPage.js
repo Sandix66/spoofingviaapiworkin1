@@ -828,21 +828,18 @@ const OTPBotPage = () => {
                                     <Hash className="w-3 h-3" />
                                     OTP Digits
                                 </Label>
-                                <Select 
-                                    value={config.otp_digits.toString()}
-                                    onValueChange={(v) => setConfig({...config, otp_digits: parseInt(v)})}
+                                <Input
+                                    type="number"
+                                    value={config.otp_digits}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value) || 6;
+                                        setConfig({...config, otp_digits: Math.min(Math.max(val, 1), 12)});
+                                    }}
+                                    min="1"
+                                    max="12"
+                                    className="bg-[#0F111A] border-white/10 text-center text-2xl font-bold"
                                     disabled={isCallActive}
-                                >
-                                    <SelectTrigger className="bg-[#0F111A] border-white/10 w-32">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-[#12141F] border-white/10">
-                                        <SelectItem value="4">4 digits</SelectItem>
-                                        <SelectItem value="5">5 digits</SelectItem>
-                                        <SelectItem value="6">6 digits</SelectItem>
-                                        <SelectItem value="8">8 digits</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                />
                             </div>
 
                             {/* Action Button */}
