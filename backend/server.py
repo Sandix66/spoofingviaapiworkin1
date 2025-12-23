@@ -1313,15 +1313,6 @@ async def delete_template(template_id: str, current_user: dict = Depends(get_cur
     return {"message": "Template deleted"}
 
 # ==================== OTP BOT ROUTES ====================
-        "fax": 0,
-        "beep": 0,
-        "music": 0,
-        "otp_captured": otp_count,
-        "avg_duration_seconds": 0,
-        "total_duration_seconds": 0,
-        "total_cost_credits": 0,
-        "success_rate": 0
-    }
 
 @user_router.get("/calls")
 async def get_user_calls(limit: int = 50, current_user: dict = Depends(get_current_user)):
