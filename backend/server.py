@@ -1578,16 +1578,45 @@ async def get_user_stats(current_user: dict = Depends(get_current_user)):
 async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(get_current_user)):
     """Initiate an OTP bot call"""
     
-    # Check credits (minimum 1 credit required to start)
-    user_credits = current_user.get("credits", 0)
-    if user_credits < 1:
-        raise HTTPException(status_code=402, detail="Insufficient credits. Please contact admin to add credits.")
+    # Check active plan first (priority over credits)
+    active_plan = await db.user_plans.find_one({
+        "user_id": current_user["id"],
+        "is_active": True,
+        "expires_at": {"$gt": datetime.now(timezone.utc).isoformat()}
+    }, {"_id": 0})
     
-    # Deduct initial 1 credit (will calculate actual cost at end based on duration)
-    await db.users.update_one(
-        {"id": current_user["id"]},
-        {"$inc": {"credits": -1}}
-    )
+    using_plan = False
+    
+    if active_plan:
+        # Check FUP
+        used_minutes = active_plan.get("used_minutes", 0)
+        fup_minutes = active_plan.get("fup_minutes", 0)
+        
+        if used_minutes < fup_minutes:
+            # Still within FUP - use plan
+            using_plan = True
+        else:
+            # FUP exceeded - check credits
+            user_credits = current_user.get("credits", 0)
+            if user_credits < 1:
+                raise HTTPException(status_code=402, detail="Daily FUP limit reached and insufficient credits. Please top-up.")
+            
+            # Deduct from credits
+            await db.users.update_one(
+                {"id": current_user["id"]},
+                {"$inc": {"credits": -1}}
+            )
+    else:
+        # No active plan - check credits
+        user_credits = current_user.get("credits", 0)
+        if user_credits < 1:
+            raise HTTPException(status_code=402, detail="No active plan and insufficient credits. Please purchase a plan or top-up credits.")
+        
+        # Deduct from credits
+        await db.users.update_one(
+            {"id": current_user["id"]},
+            {"$inc": {"credits": -1}}
+        )
     
     session_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
