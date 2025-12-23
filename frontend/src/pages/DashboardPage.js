@@ -97,8 +97,11 @@ const DashboardPage = () => {
     const statusBreakdown = [
         { label: 'Answered', count: stats.successful, icon: CheckCircle2, color: 'text-green-400' },
         { label: 'Failed', count: stats.failed, icon: XCircle, color: 'text-red-400' },
+        { label: 'Voicemail', count: stats.voicemail, icon: Phone, color: 'text-purple-400' },
         { label: 'Busy', count: stats.busy, icon: Phone, color: 'text-yellow-400' },
-        { label: 'No Answer', count: stats.no_answer, icon: XCircle, color: 'text-orange-400' }
+        { label: 'No Answer', count: stats.no_answer, icon: XCircle, color: 'text-orange-400' },
+        { label: 'Fax', count: stats.fax, icon: XCircle, color: 'text-gray-400' },
+        { label: 'Music', count: stats.music, icon: XCircle, color: 'text-blue-400' }
     ];
 
     return (
