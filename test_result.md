@@ -246,6 +246,78 @@ backend:
         agent: "previous"
         comment: "Retry logic for voice prompts implemented with proper timeout values. Confirmed working by user."
 
+  - task: "Multi-User System - Admin Authentication & Authorization"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED - Admin authentication working perfectly. Admin login (Admin@voip.com / 1234) successful. Role 'admin' correctly returned in response. Admin can access admin-only endpoints (GET /api/admin/users returns 200). Regular user correctly denied access to admin endpoints (returns 403). Authorization working as expected. Minor: Role not embedded in JWT token payload (only user_id in 'sub' field), but role is fetched from database on each request which is more secure and allows immediate role changes. All authorization tests passed (44/45 tests, 97.8% success rate)."
+
+  - task: "Multi-User System - Admin User Management"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED - All admin user management endpoints working correctly. POST /api/admin/users creates user with custom credits (tested with 50 credits) ✅. GET /api/admin/users lists all users ✅. PUT /api/admin/users/{id} updates user info (name, credits) ✅. DELETE /api/admin/users/{id} deletes user and verified deletion ✅. All CRUD operations working perfectly."
+
+  - task: "Multi-User System - Credit Management"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED - Credit system working perfectly. POST /api/admin/users/{id}/credits adds credits (tested +25 credits, balance 100→125) ✅. Deduct credits with negative amount (tested -10 credits, balance 125→115) ✅. GET /api/user/credits returns user's current credits ✅. Insufficient credits handling: User with 0 credits cannot initiate call (returns 402 Payment Required) ✅. Credit deduction on call start: 1 credit deducted immediately when call initiated (verified 100→99 credits) ✅. All credit operations working correctly."
+
+  - task: "Multi-User System - User Profile Endpoints"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED - All user profile endpoints working correctly. GET /api/user/profile returns user's own profile (id, email, name, role, credits) ✅. PUT /api/user/password changes password successfully (tested old→new password, login with new password works) ✅. GET /api/user/calls returns user's own call history ✅. GET /api/user/stats returns user statistics (total_calls, total_duration_seconds, total_credits_spent, successful_calls) ✅. All endpoints working perfectly."
+
+  - task: "Multi-User System - Admin Stats & Monitoring"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED - All admin monitoring endpoints working correctly. GET /api/admin/stats returns dashboard statistics (total_users, active_users, total_calls_today, total_calls_all_time, total_credits_distributed, total_credits_spent) ✅. GET /api/admin/activities returns all user activities with action types (user_created, credit_added, credit_deducted, password_changed, etc.) ✅. GET /api/admin/calls returns all call history across all users ✅. All monitoring endpoints working perfectly."
+
+  - task: "Multi-User System - Activity Logging"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED - Activity logging working perfectly. Verified activities are logged for: (1) User creation - 'user_created' activity logged with created_user_id ✅, (2) Credit addition - 'credit_added' activity logged with target_user_id and amount ✅, (3) Password change - 'password_changed' activity logged ✅. All activities include timestamp and details. Activity logging system working correctly across all operations."
+
 frontend:
   - task: "OTP Bot Page UI"
     implemented: true
