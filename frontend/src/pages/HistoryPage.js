@@ -46,8 +46,12 @@ const HistoryPage = () => {
     const fetchCalls = async () => {
         setLoading(true);
         try {
-            const data = await voiceApi.getHistory(100, 0);
-            setCalls(data);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/user/calls?limit=100`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await response.json();
+            setCalls(data.calls || []);
         } catch (error) {
             console.error('Error fetching calls:', error);
         } finally {
