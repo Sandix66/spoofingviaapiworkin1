@@ -59,8 +59,8 @@ const LoginPage = () => {
                 <Card className="glass border-white/5 animate-slide-up" style={{ animationDelay: '0.1s' }}>
                     {/* Login Form */}
                     <CardHeader className="pb-4">
-                        <CardTitle className="text-xl">Selamat Datang</CardTitle>
-                        <CardDescription>Masuk ke akun Anda</CardDescription>
+                        <CardTitle className="text-xl">Welcome Back</CardTitle>
+                        <CardDescription>Login to your account</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleLogin} className="space-y-4">
@@ -70,7 +70,7 @@ const LoginPage = () => {
                                             id="login-email"
                                             data-testid="login-email-input"
                                             type="email"
-                                            placeholder="nama@email.com"
+                                            placeholder="name@email.com"
                                             value={loginEmail}
                                             onChange={(e) => setLoginEmail(e.target.value)}
                                             className="bg-[#0F111A] border-white/10 focus:border-violet-500"
@@ -96,7 +96,7 @@ const LoginPage = () => {
                                         className="w-full bg-violet-600 hover:bg-violet-700 glow-primary"
                                         disabled={isLoading}
                                     >
-                                        {isLoading ? 'Memproses...' : 'Masuk'}
+                                        {isLoading ? 'Processing...' : 'Login'}
                                     </Button>
 
                                     <div className="mt-6 text-center">
