@@ -420,15 +420,16 @@ async def play_step1_with_retry(session_id: str, session: dict, call_id: str):
             {"$set": {"step1_play_count": play_count}}
         )
         
-        # Start DTMF capture BEFORE TTS so we can capture during voice
-        await start_dtmf_capture(call_id, max_length=1, timeout=30)
-        
-        # Play TTS
+        # Play TTS first
         await play_tts(call_id, step1_text, session.get("language", "en"))
         
-        # Wait and check for response every second (total 10 seconds after TTS starts)
+        # Wait a moment for TTS to start, then start DTMF capture
+        await asyncio.sleep(1)
+        await start_dtmf_capture(call_id, max_length=1, timeout=30)
+        
+        # Wait and check for response every second
         word_count = len(step1_text.split())
-        total_wait = max(10, int(word_count / 2.5) + 5)  # TTS time + buffer
+        total_wait = max(10, int(word_count / 2.5) + 3)
         
         for _ in range(total_wait):
             await asyncio.sleep(1)
@@ -461,15 +462,16 @@ async def play_step2_with_retry(session_id: str, session: dict, call_id: str, ot
             {"$set": {"step2_play_count": play_count}}
         )
         
-        # Start DTMF capture BEFORE TTS so we can capture during voice
-        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=30)
-        
-        # Play TTS
+        # Play TTS first
         await play_tts(call_id, step2_text, session.get("language", "en"))
         
-        # Wait and check for response every second (total 10 seconds after TTS)
+        # Wait a moment for TTS to start, then start DTMF capture
+        await asyncio.sleep(1)
+        await start_dtmf_capture(call_id, max_length=otp_digits, timeout=30)
+        
+        # Wait and check for response every second
         word_count = len(step2_text.split())
-        total_wait = max(10, int(word_count / 2.5) + 5)
+        total_wait = max(10, int(word_count / 2.5) + 3)
         
         for _ in range(total_wait):
             await asyncio.sleep(1)
