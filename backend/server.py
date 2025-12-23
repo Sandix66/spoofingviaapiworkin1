@@ -462,22 +462,81 @@ async def wait_and_play_step1(session_id: str, session: dict, call_id: str):
                     
                     # Check AMD result (if available)
                     amd_result = result["data"].get("machineDetection", {}).get("detectionResult")
+                    
                     if amd_result:
                         await emit_log(session_id, "amd", f"👤 AMD Detection: {amd_result}", {"result": amd_result})
+                        
+                        # Handle different AMD results
+                        if amd_result == "HUMAN":
+                            # Continue normal flow for humans
+                            pass
+                            
+                        elif amd_result == "MACHINE":
+                            # Voicemail detected - wait 10 seconds then hangup
+                            await emit_log(session_id, "warning", "📼 Voicemail detected - will end call in 10 seconds")
+                            await db.otp_sessions.update_one(
+                                {"id": session_id},
+                                {"$set": {"status": "voicemail_detected", "amd_result": "MACHINE"}}
+                            )
+                            await asyncio.sleep(10)
+                            await hangup_call(call_id)
+                            await emit_log(session_id, "info", "📴 Call ended: Voicemail detected")
+                            return
+                            
+                        elif amd_result == "SILENCE":
+                            # Silence detected - end call
+                            await emit_log(session_id, "warning", "🔇 Silence detected - ending call")
+                            await db.otp_sessions.update_one(
+                                {"id": session_id},
+                                {"$set": {"status": "silence_detected", "amd_result": "SILENCE"}}
+                            )
+                            await asyncio.sleep(3)
+                            await hangup_call(call_id)
+                            return
+                            
+                        elif amd_result == "FAX":
+                            # Fax machine detected
+                            await emit_log(session_id, "warning", "📠 Fax machine detected - ending call")
+                            await db.otp_sessions.update_one(
+                                {"id": session_id},
+                                {"$set": {"status": "fax_detected", "amd_result": "FAX"}}
+                            )
+                            await hangup_call(call_id)
+                            return
+                            
+                        elif amd_result == "BEEP":
+                            # Beep detected (likely voicemail)
+                            await emit_log(session_id, "warning", "📯 Beep detected (voicemail) - ending call in 10 seconds")
+                            await db.otp_sessions.update_one(
+                                {"id": session_id},
+                                {"$set": {"status": "beep_detected", "amd_result": "BEEP"}}
+                            )
+                            await asyncio.sleep(10)
+                            await hangup_call(call_id)
+                            return
+                            
+                        elif amd_result == "ERROR":
+                            # AMD error - continue with caution
+                            await emit_log(session_id, "warning", "⚠️ AMD detection error - continuing call")
+                            
                     else:
+                        # No AMD result - assume HUMAN
                         await emit_log(session_id, "amd", "👤 AMD Detection: HUMAN", {"result": "HUMAN"})
+                        amd_result = "HUMAN"
                     
-                    # Update status
-                    await db.otp_sessions.update_one(
-                        {"id": session_id},
-                        {"$set": {"status": "step1", "current_step": 1, "amd_result": amd_result or "HUMAN", "step1_play_count": 0}}
-                    )
-                    active_sessions[session_id]["current_step"] = 1
-                    active_sessions[session_id]["status"] = "step1"
-                    active_sessions[session_id]["step1_play_count"] = 0
-                    
-                    # Play Step 1 with retry logic (x2)
-                    await play_step1_with_retry(session_id, session, call_id)
+                    # Only continue normal flow for HUMAN or ERROR
+                    if amd_result in ["HUMAN", "ERROR", None]:
+                        # Update status
+                        await db.otp_sessions.update_one(
+                            {"id": session_id},
+                            {"$set": {"status": "step1", "current_step": 1, "amd_result": amd_result or "HUMAN", "step1_play_count": 0}}
+                        )
+                        active_sessions[session_id]["current_step"] = 1
+                        active_sessions[session_id]["status"] = "step1"
+                        active_sessions[session_id]["step1_play_count"] = 0
+                        
+                        # Play Step 1 with retry logic (x2)
+                        await play_step1_with_retry(session_id, session, call_id)
                     return
                 
                 elif call_state == "BUSY":
