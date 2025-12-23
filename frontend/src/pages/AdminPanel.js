@@ -18,10 +18,13 @@ const AdminPanel = () => {
     const [stats, setStats] = useState({});
     const [calls, setCalls] = useState([]);
     const [activities, setActivities] = useState([]);
+    const [inviteCodes, setInviteCodes] = useState([]);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isCreditDialogOpen, setIsCreditDialogOpen] = useState(false);
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+    const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [generatedCode, setGeneratedCode] = useState(null);
     const navigate = useNavigate();
 
     const [newUser, setNewUser] = useState({
@@ -34,6 +37,7 @@ const AdminPanel = () => {
 
     const [creditAmount, setCreditAmount] = useState(0);
     const [newPassword, setNewPassword] = useState('');
+    const [inviteCredits, setInviteCredits] = useState(10);
 
 
     const getAuthHeaders = () => {
