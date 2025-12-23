@@ -1668,6 +1668,7 @@ async def handle_call_events(request: Request):
                     await db.otp_sessions.update_one({"id": session_id}, {"$set": {"status": "music_detected"}})
                     await hangup_call(call_id)
                     await emit_log(session_id, "info", "📴 Call ended: Music detected")
+                    await save_call_history(session_id, session, call_id, "music_detected")
                     
                 elif detection_result == "OTHER":
                     await emit_log(session_id, "warning", "❓ Unknown detection - continuing call")
