@@ -307,13 +307,6 @@ const OTPBotPage = () => {
     };
 
     const handleHangup = async () => {
-            toast.error('Failed to request PIN');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleHangup = async () => {
         if (!sessionId) return;
         setIsLoading(true);
 
