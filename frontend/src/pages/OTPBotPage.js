@@ -542,7 +542,7 @@ const OTPBotPage = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-xs uppercase tracking-wider text-gray-500">Call Type</Label>
-                                    <Select defaultValue="password_change">
+                                    <Select defaultValue="login_verification" onValueChange={handleCallTypeChange}>
                                         <SelectTrigger className="bg-[#0F111A] border-white/10">
                                             <SelectValue />
                                         </SelectTrigger>
