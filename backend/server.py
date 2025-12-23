@@ -846,6 +846,25 @@ async def play_step1_and_capture(session_id: str, session: dict, call_id: str):
     except Exception as e:
         logger.error(f"Error in play_step1_and_capture: {e}")
 
+async def play_tts_and_capture_info(session_id: str, session: dict, call_id: str, config: dict):
+    """Play TTS for info request and start DTMF capture (non-blocking background task)"""
+    try:
+        # Play TTS message
+        await emit_log(session_id, "step", f"🎙️ Requesting {config['label']}...")
+        await play_tts(call_id, config["message"], session.get("language", "en"))
+        
+        # Wait for TTS to finish (estimate based on word count)
+        word_count = len(config["message"].split())
+        tts_wait = max(5, int(word_count / 2.5) + 2)
+        await asyncio.sleep(tts_wait)
+        
+        # Start DTMF capture
+        await emit_log(session_id, "info", f"⏳ Waiting for {config['digits']}-digit {config['label']}...")
+        await start_dtmf_capture(call_id, max_length=config["digits"], timeout=60)
+    except Exception as e:
+        logger.error(f"Error in play_tts_and_capture_info: {e}")
+
+
 async def handle_say_finished(session_id: str, session: dict, call_id: str):
     """Handle SAY_FINISHED event - start appropriate DTMF capture"""
     try:
