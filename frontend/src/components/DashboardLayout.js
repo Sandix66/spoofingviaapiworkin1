@@ -28,9 +28,9 @@ const DashboardLayout = ({ children }) => {
 
     const navItems = [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { to: '/call', icon: Phone, label: 'Buat Panggilan' },
+        { to: '/call', icon: Phone, label: 'Make Call' },
         { to: '/otp-bot', icon: Bot, label: 'OTP Bot' },
-        { to: '/history', icon: History, label: 'Riwayat' },
+        { to: '/history', icon: History, label: 'History' },
         ...(user?.role === 'admin' ? [{ to: '/admin', icon: Shield, label: 'Admin Panel' }] : []),
         { to: '/profile', icon: User, label: 'Profile' },
     ];
@@ -137,7 +137,7 @@ const DashboardLayout = ({ children }) => {
                             data-testid="logout-btn"
                         >
                             <LogOut className="w-4 h-4 mr-2" />
-                            Keluar
+                            Logout
                         </Button>
                     </div>
                 </div>
