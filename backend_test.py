@@ -415,6 +415,316 @@ class VoiceSpoofAPITester:
         
         return success
 
+    def test_voice_preview_elevenlabs(self):
+        """Test voice preview with ElevenLabs"""
+        if not self.token:
+            self.log_test("Voice Preview - ElevenLabs", False, "No token available")
+            return False
+            
+        # Using Rachel voice (21m00Tcm4TlvDq8ikWAM)
+        url = f"{self.base_url}/voice/preview"
+        headers = {
+            'Authorization': f'Bearer {self.token}',
+            'Content-Type': 'application/json'
+        }
+        
+        data = {
+            "text": "Hello, this is a test of the ElevenLabs voice preview feature.",
+            "voice_name": "21m00Tcm4TlvDq8ikWAM",
+            "voice_provider": "elevenlabs"
+        }
+        
+        print(f"\n🔍 Testing Voice Preview - ElevenLabs...")
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.post(url, json=data, headers=headers, timeout=30)
+            print(f"   Status: {response.status_code}")
+            
+            if response.status_code == 200:
+                # Check if response is audio
+                content_type = response.headers.get('content-type', '')
+                if 'audio' in content_type:
+                    audio_size = len(response.content)
+                    self.log_test("Voice Preview - ElevenLabs", True, f"Audio received: {audio_size} bytes, type: {content_type}")
+                    return True
+                else:
+                    self.log_test("Voice Preview - ElevenLabs", False, f"Expected audio, got: {content_type}")
+                    return False
+            else:
+                self.log_test("Voice Preview - ElevenLabs", False, f"Expected 200, got {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Voice Preview - ElevenLabs", False, f"Exception: {str(e)}")
+            return False
+
+    def test_voice_preview_deepgram(self):
+        """Test voice preview with Deepgram"""
+        if not self.token:
+            self.log_test("Voice Preview - Deepgram", False, "No token available")
+            return False
+            
+        url = f"{self.base_url}/voice/preview"
+        headers = {
+            'Authorization': f'Bearer {self.token}',
+            'Content-Type': 'application/json'
+        }
+        
+        data = {
+            "text": "Hello, this is a test of the Deepgram voice preview feature.",
+            "voice_name": "aura-asteria-en",
+            "voice_provider": "deepgram"
+        }
+        
+        print(f"\n🔍 Testing Voice Preview - Deepgram...")
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.post(url, json=data, headers=headers, timeout=30)
+            print(f"   Status: {response.status_code}")
+            
+            if response.status_code == 200:
+                # Check if response is audio
+                content_type = response.headers.get('content-type', '')
+                if 'audio' in content_type:
+                    audio_size = len(response.content)
+                    self.log_test("Voice Preview - Deepgram", True, f"Audio received: {audio_size} bytes, type: {content_type}")
+                    return True
+                else:
+                    self.log_test("Voice Preview - Deepgram", False, f"Expected audio, got: {content_type}")
+                    return False
+            else:
+                self.log_test("Voice Preview - Deepgram", False, f"Expected 200, got {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Voice Preview - Deepgram", False, f"Exception: {str(e)}")
+            return False
+
+    def test_otp_digits_range(self):
+        """Test OTP digits field with various values"""
+        if not self.token:
+            self.log_test("OTP Digits Range Test", False, "No token available")
+            return False
+        
+        print(f"\n🔍 Testing OTP Digits Range (1-100)...")
+        
+        # Test with valid values
+        test_values = [1, 6, 10, 50, 100]
+        all_passed = True
+        
+        for digits in test_values:
+            call_config = {
+                "recipient_number": "+14155552671",
+                "caller_id": "+14245298701",
+                "recipient_name": "Test User",
+                "service_name": "Test Service",
+                "otp_digits": digits,
+                "language": "en"
+            }
+            
+            success, response = self.run_test(
+                f"OTP Digits - Value {digits}",
+                "POST",
+                "otp/initiate-call",
+                200,
+                data=call_config
+            )
+            
+            if success and 'session_id' in response:
+                # Verify the session has correct otp_digits
+                session_id = response['session_id']
+                success2, session_data = self.run_test(
+                    f"Verify OTP Digits - {digits}",
+                    "GET",
+                    f"otp/session/{session_id}",
+                    200
+                )
+                
+                if success2:
+                    actual_digits = session_data.get('otp_digits')
+                    if actual_digits == digits:
+                        self.log_test(f"OTP Digits Validation - {digits}", True, f"Correct value stored: {actual_digits}")
+                    else:
+                        self.log_test(f"OTP Digits Validation - {digits}", False, f"Expected {digits}, got {actual_digits}")
+                        all_passed = False
+            else:
+                all_passed = False
+        
+        return all_passed
+
+    def test_call_template_placeholders(self):
+        """Test call templates with placeholder replacement"""
+        if not self.token:
+            self.log_test("Call Template Placeholders", False, "No token available")
+            return False
+        
+        print(f"\n🔍 Testing Call Template Placeholder Replacement...")
+        
+        # Test with bank verification template (uses all placeholders)
+        call_config = {
+            "recipient_number": "+14155552671",
+            "caller_id": "+14245298701",
+            "recipient_name": "Sarah Johnson",
+            "service_name": "Premium Banking",
+            "bank_name": "Chase Bank",
+            "card_type": "Mastercard",
+            "ending_card": "4567",
+            "otp_digits": 6,
+            "language": "en",
+            "step1_message": "Hello {name}. This is {bank_name}. We detected activity on your {card_type} ending in {ending_card}. Press 1 to verify.",
+            "step2_message": "Please enter the {digits} digit code for your {card_type} card ending in {ending_card}.",
+            "step3_message": "Please wait while we verify your {service} account.",
+            "accepted_message": "Thank you {name}. Your {bank_name} {card_type} ending in {ending_card} is verified.",
+            "rejected_message": "The code is incorrect. Please re-enter the {digits} digit code for card ending in {ending_card}."
+        }
+        
+        success, response = self.run_test(
+            "Call Template - Placeholder Test",
+            "POST",
+            "otp/initiate-call",
+            200,
+            data=call_config
+        )
+        
+        if success and 'session_id' in response:
+            session_id = response['session_id']
+            
+            # Get session and verify placeholders are replaced
+            success2, session_data = self.run_test(
+                "Verify Placeholder Replacement",
+                "GET",
+                f"otp/session/{session_id}",
+                200
+            )
+            
+            if success2:
+                messages = session_data.get('messages', {})
+                step1 = messages.get('step1', '')
+                
+                # Check if placeholders are replaced
+                placeholders_replaced = True
+                errors = []
+                
+                if '{name}' in step1:
+                    placeholders_replaced = False
+                    errors.append("{name} not replaced")
+                if '{bank_name}' in step1:
+                    placeholders_replaced = False
+                    errors.append("{bank_name} not replaced")
+                if '{card_type}' in step1:
+                    placeholders_replaced = False
+                    errors.append("{card_type} not replaced")
+                if '{ending_card}' in step1:
+                    placeholders_replaced = False
+                    errors.append("{ending_card} not replaced")
+                
+                # Check if actual values are present
+                if 'Sarah Johnson' in step1 and 'Chase Bank' in step1 and 'Mastercard' in step1 and '4567' in step1:
+                    self.log_test("Placeholder Replacement Validation", True, "All placeholders correctly replaced")
+                    return True
+                else:
+                    error_msg = f"Placeholders not replaced correctly. Errors: {', '.join(errors)}"
+                    self.log_test("Placeholder Replacement Validation", False, error_msg)
+                    return False
+        
+        return False
+
+    def test_multi_provider_tts(self):
+        """Test multi-provider TTS integration"""
+        if not self.token:
+            self.log_test("Multi-Provider TTS", False, "No token available")
+            return False
+        
+        print(f"\n🔍 Testing Multi-Provider TTS Integration...")
+        
+        # Test with ElevenLabs
+        call_config_elevenlabs = {
+            "recipient_number": "+14155552671",
+            "caller_id": "+14245298701",
+            "recipient_name": "Test User",
+            "service_name": "Test Service",
+            "otp_digits": 6,
+            "language": "en",
+            "voice_name": "21m00Tcm4TlvDq8ikWAM",
+            "voice_provider": "elevenlabs"
+        }
+        
+        success1, response1 = self.run_test(
+            "Multi-Provider TTS - ElevenLabs",
+            "POST",
+            "otp/initiate-call",
+            200,
+            data=call_config_elevenlabs
+        )
+        
+        elevenlabs_passed = False
+        if success1 and 'session_id' in response1:
+            session_id = response1['session_id']
+            
+            # Check if audio_urls are generated
+            success2, session_data = self.run_test(
+                "Verify Audio Pre-generation - ElevenLabs",
+                "GET",
+                f"otp/session/{session_id}",
+                200
+            )
+            
+            if success2:
+                audio_urls = session_data.get('audio_urls', {})
+                expected_files = ['step1', 'step2', 'step3', 'accepted', 'rejected']
+                
+                if all(key in audio_urls for key in expected_files):
+                    self.log_test("Audio Pre-generation - ElevenLabs", True, f"All 5 audio files generated: {list(audio_urls.keys())}")
+                    elevenlabs_passed = True
+                else:
+                    missing = [key for key in expected_files if key not in audio_urls]
+                    self.log_test("Audio Pre-generation - ElevenLabs", False, f"Missing audio files: {missing}")
+        
+        # Test with Deepgram
+        call_config_deepgram = {
+            "recipient_number": "+14155552671",
+            "caller_id": "+14245298701",
+            "recipient_name": "Test User",
+            "service_name": "Test Service",
+            "otp_digits": 6,
+            "language": "en",
+            "voice_name": "aura-asteria-en",
+            "voice_provider": "deepgram"
+        }
+        
+        success3, response3 = self.run_test(
+            "Multi-Provider TTS - Deepgram",
+            "POST",
+            "otp/initiate-call",
+            200,
+            data=call_config_deepgram
+        )
+        
+        deepgram_passed = False
+        if success3 and 'session_id' in response3:
+            session_id = response3['session_id']
+            
+            # Check if audio_urls are generated
+            success4, session_data = self.run_test(
+                "Verify Audio Pre-generation - Deepgram",
+                "GET",
+                f"otp/session/{session_id}",
+                200
+            )
+            
+            if success4:
+                audio_urls = session_data.get('audio_urls', {})
+                expected_files = ['step1', 'step2', 'step3', 'accepted', 'rejected']
+                
+                if all(key in audio_urls for key in expected_files):
+                    self.log_test("Audio Pre-generation - Deepgram", True, f"All 5 audio files generated: {list(audio_urls.keys())}")
+                    deepgram_passed = True
+                else:
+                    missing = [key for key in expected_files if key not in audio_urls]
+                    self.log_test("Audio Pre-generation - Deepgram", False, f"Missing audio files: {missing}")
+        
+        return elevenlabs_passed and deepgram_passed
+
     def run_all_tests(self):
         """Run comprehensive API tests"""
         print("=" * 60)
