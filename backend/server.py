@@ -1062,7 +1062,10 @@ async def change_password(password_data: PasswordChange, current_user: dict = De
 async def get_user_calls(limit: int = 50, current_user: dict = Depends(get_current_user)):
     """Get user's own call history"""
     calls = await db.call_history.find(
-
+        {"user_id": current_user["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    return {"calls": calls}
 
 @user_router.post("/generate-invite")
 async def user_generate_invite(current_user: dict = Depends(get_current_user)):
