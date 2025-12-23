@@ -785,7 +785,7 @@ async def register_with_invite(email: EmailStr, password: str, name: str, invita
     await db.users.insert_one(new_user)
     
     # Mark invitation code as used
-    await db.invitation_codes.update_one(
+    update_result = await db.invitation_codes.update_one(
         {"code": invitation_code},
         {"$set": {
             "is_used": True,
@@ -793,6 +793,7 @@ async def register_with_invite(email: EmailStr, password: str, name: str, invita
             "used_at": now
         }}
     )
+    logger.info(f"Invitation code {invitation_code} marked as used. Modified: {update_result.modified_count}")
     
     # Log activity
     await log_activity(user_id, "user_registered", {
