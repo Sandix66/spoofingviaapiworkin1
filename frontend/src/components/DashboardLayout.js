@@ -10,7 +10,9 @@ import {
     Menu,
     X,
     User,
-    Bot
+    Bot,
+    Shield,
+    CreditCard
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -29,6 +31,8 @@ const DashboardLayout = ({ children }) => {
         { to: '/call', icon: Phone, label: 'Buat Panggilan' },
         { to: '/otp-bot', icon: Bot, label: 'OTP Bot' },
         { to: '/history', icon: History, label: 'Riwayat' },
+        ...(user?.role === 'admin' ? [{ to: '/admin', icon: Shield, label: 'Admin Panel' }] : []),
+        { to: '/profile', icon: User, label: 'Profile' },
     ];
 
     const NavItem = ({ to, icon: Icon, label }) => (
