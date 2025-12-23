@@ -1216,10 +1216,6 @@ async def request_info(session_id: str, info_type: str, current_user: dict = Dep
     asyncio.create_task(play_tts_and_capture_info(session_id, session, call_id, config))
     
     return {"status": "requesting_info", "info_type": info_type, "digits": config["digits"]}
-    
-    await emit_log(session_id, "info", f"⏳ Waiting for {config['label']}...")
-    
-    return {"status": "requesting_info", "info_type": info_type, "digits": config["digits"]}
 
 @otp_router.get("/recording/{session_id}")
 async def get_session_recording(session_id: str, current_user: dict = Depends(get_current_user)):
