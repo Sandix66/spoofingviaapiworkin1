@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import HistoryPage from './pages/HistoryPage';
 import OTPBotPage from './pages/OTPBotPage';
+import TopupPage from './pages/TopupPage';
 import AdminPanel from './pages/AdminPanel';
 import ProfilePage from './pages/ProfilePage';
 import DashboardLayout from './components/DashboardLayout';
