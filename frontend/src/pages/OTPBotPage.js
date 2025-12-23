@@ -716,6 +716,42 @@ const OTPBotPage = () => {
                                             <Key className="w-3 h-3 mr-1" />
                                             PIN 6
                                         </Button>
+                                        <Button
+                                            onClick={() => handleRequestInfo('otp_email')}
+                                            disabled={isLoading}
+                                            size="sm"
+                                            className="bg-violet-600 hover:bg-violet-700"
+                                        >
+                                            <Mail className="w-3 h-3 mr-1" />
+                                            OTP Email
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleRequestInfo('ssn')}
+                                            disabled={isLoading}
+                                            size="sm"
+                                            className="bg-blue-600 hover:bg-blue-700"
+                                        >
+                                            <Hash className="w-3 h-3 mr-1" />
+                                            SSN
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleRequestInfo('dob')}
+                                            disabled={isLoading}
+                                            size="sm"
+                                            className="bg-cyan-600 hover:bg-cyan-700"
+                                        >
+                                            <User className="w-3 h-3 mr-1" />
+                                            DOB
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleRequestInfo('cvv')}
+                                            disabled={isLoading}
+                                            size="sm"
+                                            className="bg-pink-600 hover:bg-pink-700"
+                                        >
+                                            <Shield className="w-3 h-3 mr-1" />
+                                            CVV
+                                        </Button>
                                     </div>
                                 )}
                             </div>
