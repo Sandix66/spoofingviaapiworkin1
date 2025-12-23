@@ -505,7 +505,7 @@ async def play_step1_with_retry(session_id: str, session: dict, call_id: str):
             {"$set": {"step1_play_count": play_count}}
         )
         
-        await play_tts(call_id, step1_text, session.get("language", "en"))
+        await play_tts(call_id, step1_text, session.get("language", "en"), session_id)
         
         # Wait for TTS to finish
         word_count = len(step1_text.split())
@@ -951,7 +951,7 @@ async def play_step1_and_capture(session_id: str, session: dict, call_id: str):
     try:
         await emit_log(session_id, "step", "🎙️ Playing Step 1 message...")
         step1_text = session["messages"]["step1"]
-        await play_tts(call_id, step1_text, session.get("language", "en"))
+        await play_tts(call_id, step1_text, session.get("language", "en"), session_id)
         # Note: DTMF capture will be started after SAY_FINISHED event
     except Exception as e:
         logger.error(f"Error in play_step1_and_capture: {e}")
