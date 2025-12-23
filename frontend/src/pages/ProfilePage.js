@@ -157,6 +157,54 @@ const ProfilePage = () => {
                     </Card>
                 </div>
 
+
+                {/* My Invitation Code */}
+                <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                        <CardTitle className="text-white flex items-center gap-2">
+                            <Ticket className="w-5 h-5" />
+                            My Invitation Code
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {myInvite ? (
+                            <div className="p-6 bg-purple-900/20 border border-purple-500/30 rounded-lg text-center">
+                                <p className="text-sm text-gray-300 mb-3">Share this code to invite friends:</p>
+                                <div className="flex items-center justify-center gap-3">
+                                    <code className="text-3xl font-mono font-bold text-purple-400 tracking-widest">
+                                        {myInvite.code}
+                                    </code>
+                                    <Button onClick={handleCopyInvite} className="bg-purple-600">
+                                        <Copy className="w-4 h-4 mr-2" />
+                                        Copy
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-4">
+                                    Status: {myInvite.is_used ? (
+                                        <span className="text-red-400">Used</span>
+                                    ) : (
+                                        <span className="text-green-400">Available</span>
+                                    )}
+                                </p>
+                                {myInvite.is_used && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Used on {new Date(myInvite.used_at).toLocaleDateString()}
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-center py-6">
+                                <p className="text-gray-400 mb-4">You haven't generated an invitation code yet</p>
+                                <Button onClick={handleGenerateMyInvite} className="bg-purple-600">
+                                    <Ticket className="w-4 h-4 mr-2" />
+                                    Generate My Invite Code
+                                </Button>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+
                 {/* Change Password */}
                 <Card className="bg-gray-800 border-gray-700">
                     <CardHeader>
