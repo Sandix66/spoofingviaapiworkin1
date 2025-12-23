@@ -204,7 +204,7 @@ const HistoryPage = () => {
                                         <audio 
                                             controls 
                                             className="w-full h-10"
-                                            src={`${API}/otp/recording/download/${call.recording_file_id}`}
+                                            src={`${API}/otp/recording/play/${call.recording_file_id}?token=${localStorage.getItem('token')}`}
                                         />
                                     </div>
                                 )}
