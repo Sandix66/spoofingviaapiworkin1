@@ -103,16 +103,16 @@ const DashboardLayout = ({ children }) => {
                         ))}
                     </nav>
 
-                    {/* User & Logout */}
-                    <div className="p-4 border-t border-white/5">
-                        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#0F111A] mb-3">
+                    {/* User & Credits & Logout */}
+                    <div className="p-4 border-t border-white/5 space-y-3">
+                        {/* Credits Display */}
+                        <div className=\"px-4 py-3 rounded-lg bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30\">\n                            <div className=\"flex items-center justify-between\">\n                                <div className=\"flex items-center gap-2\">\n                                    <CreditCard className=\"w-4 h-4 text-yellow-400\" />\n                                    <span className=\"text-xs text-yellow-100\">Credits</span>\n                                </div>\n                                <span className=\"text-lg font-bold text-yellow-400\">{user?.credits?.toFixed(0) || 0}</span>\n                            </div>\n                            <p className=\"text-xs text-yellow-200/60 mt-1\">1 credit = 1 minute</p>\n                        </div>\n\n                        {/* User Info */}\n                        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#0F111A]">
                             <div className="w-8 h-8 rounded-full bg-violet-600/30 flex items-center justify-center">
                                 <User className="w-4 h-4 text-violet-400" />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-white truncate">{user?.name}</p>
-                                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                            </div>
+                                <p className="text-xs text-gray-500 truncate">{user?.email}</p>\n                                {user?.role === 'admin' && (\n                                    <span className=\"text-xs px-2 py-0.5 bg-purple-600 rounded text-white mt-1 inline-block\">Admin</span>\n                                )}\n                            </div>
                         </div>
                         <Button
                             variant="ghost"
