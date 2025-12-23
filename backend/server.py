@@ -109,6 +109,8 @@ class OTPCallConfig(BaseModel):
     ending_card: str = Field(default="", description="Last 4 digits of card")
     otp_digits: int = Field(default=6, description="Expected OTP digit count")
     language: str = Field(default="en", description="Language code")
+    voice_name: str = Field(default="Joanna", description="Voice model name or ID")
+    voice_provider: str = Field(default="infobip", description="TTS provider (infobip/elevenlabs/deepgram)")
     
     step1_message: str = Field(
         default="Hello {name}, we have detected a login attempt to your {service} account from a new device or location. If you did not recognize this request, please press 1. If this was you, press 0 to approve.",
