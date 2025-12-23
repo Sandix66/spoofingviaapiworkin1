@@ -18,7 +18,7 @@ import socketio
 import asyncio
 import json
 from elevenlabs import ElevenLabs
-from deepgram import DeepgramClient, SpeakOptions
+from deepgram import DeepgramClient
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
