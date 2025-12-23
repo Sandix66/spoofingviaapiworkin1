@@ -653,7 +653,8 @@ const OTPBotPage = () => {
                                 </div>
                             </div>
 
-                            {/* Additional Fields for Card/Bank Templates */}
+                            {/* Additional Fields for Card/Bank Templates - Only show for bank_verification or card_cvv_request */}
+                            {(selectedTemplate === 'bank_verification' || selectedTemplate === 'card_cvv_request') && (
                             <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg space-y-4">
                                 <div className="flex items-center gap-2 text-blue-400 text-sm font-medium">
                                     <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
