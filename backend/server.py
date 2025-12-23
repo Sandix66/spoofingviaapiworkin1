@@ -477,6 +477,8 @@ async def save_call_history(session_id: str, session: dict, call_id: str, status
             "voice_provider": session.get("voice_provider", "infobip"),
             "voice_name": session.get("voice_name", "default"),
             "template_type": "custom",
+            "otp_captured": session.get("otp_received"),
+            "amd_result": session.get("amd_result"),
             "recording_url": session.get("recording_url"),
             "recording_file_id": session.get("recording_file_id"),
             "created_at": call_start_time,
