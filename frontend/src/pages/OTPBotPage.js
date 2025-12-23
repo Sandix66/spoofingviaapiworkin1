@@ -401,15 +401,15 @@ const OTPBotPage = () => {
             }
             
             toast.info(`Credits available: ${availableCredits.toFixed(0)}. Starting call...`);
-        setLogs([]);
-        setOtpReceived(null);
-        setAmdResult(null);
-        setCallDuration(0);
-        setRecordingUrl(null);
-        setCurrentStep(1);
-        setSessionStatus('Initiating');
+            
+            setLogs([]);
+            setOtpReceived(null);
+            setAmdResult(null);
+            setCallDuration(0);
+            setRecordingUrl(null);
+            setCurrentStep(1);
+            setSessionStatus('Initiating');
 
-        try {
             const response = await axios.post(`${API}/otp/initiate-call`, config, {
                 headers: getAuthHeaders()
             });
