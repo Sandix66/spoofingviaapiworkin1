@@ -483,21 +483,6 @@ def censor_email(email: str) -> str:
         return f"{censored}@{domain}"
     return email
 
-                            {"$set": {"recording_file_id": file_id, "recording_duration": duration}}
-                        )
-                        
-                        logger.info(f"Recording file ID saved: {file_id}")
-                        return
-            
-            # Wait before retry
-            await asyncio.sleep(3)
-        
-        logger.warning(f"No recording found for call {call_id}")
-        
-    except Exception as e:
-        logger.error(f"Error fetching recording: {e}")
-
-
 async def save_call_history(session_id: str, session: dict, call_id: str, status: str):
     """Helper function to save call history"""
     call_start_time = session.get("call_start_time")
