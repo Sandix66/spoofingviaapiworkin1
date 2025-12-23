@@ -10,17 +10,12 @@ import { toast } from 'sonner';
 
 const LoginPage = () => {
     const navigate = useNavigate();
-    const { login, register } = useAuth();
+    const { login } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     
     // Login form state
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
-    
-    // Register form state
-    const [registerName, setRegisterName] = useState('');
-    const [registerEmail, setRegisterEmail] = useState('');
-    const [registerPassword, setRegisterPassword] = useState('');
 
     const handleLogin = async (e) => {
         e.preventDefault();
