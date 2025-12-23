@@ -170,7 +170,7 @@ const HistoryPage = () => {
             <Card className="bg-[#12141F] border-white/5">
                 <CardHeader className="pb-0">
                     <CardTitle className="text-lg flex items-center justify-between">
-                        <span>Log Panggilan</span>
+                        <span>Call Log</span>
                         <span className="text-sm font-normal text-gray-500">
                             {filteredCalls.length} calls
                         </span>
