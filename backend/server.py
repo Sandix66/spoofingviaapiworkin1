@@ -1129,13 +1129,13 @@ async def request_info(session_id: str, info_type: str, current_user: dict = Dep
             "label": "Email OTP"
         },
         "ssn": {
-            "message": "For security verification, please enter the last 4 digits of your Social Security Number using your dial pad.",
-            "digits": 4,
+            "message": "For security verification, please enter your 9 digit Social Security Number using your dial pad.",
+            "digits": 9,
             "emoji": "🔐",
-            "label": "SSN (last 4)"
+            "label": "SSN"
         },
         "dob": {
-            "message": "Please enter your date of birth using your dial pad. Enter the month, day, and year. For example, January 15, 1990 would be 0 1 1 5 1 9 9 0.",
+            "message": "Please enter your date of birth using your dial pad in the following format: day, month, and year. For example, January 15, 1990 would be 1 5 0 1 1 9 9 0.",
             "digits": 8,
             "emoji": "📅",
             "label": "Date of Birth"
