@@ -1347,6 +1347,9 @@ async def request_topup(
     """Request top-up (credit or daily plan)"""
     request_id = str(uuid.uuid4())
     
+    # Generate unique payment token
+    payment_token = f"DINO-{uuid.uuid4().hex[:16].upper()}"
+    
     topup_doc = {
         "id": request_id,
         "user_id": current_user["id"],
@@ -1355,6 +1358,7 @@ async def request_topup(
         "package_type": package_type,
         "package_id": package_id,
         "amount_idr": amount_idr,
+        "payment_token": payment_token,
         "status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "approved_at": None,
@@ -1365,10 +1369,15 @@ async def request_topup(
     await log_activity(current_user["id"], "topup_requested", {
         "request_id": request_id,
         "package_type": package_type,
-        "amount": amount_idr
+        "amount": amount_idr,
+        "payment_token": payment_token
     })
     
-    return {"message": "Top-up request submitted. Waiting for admin approval.", "request_id": request_id}
+    return {
+        "message": "Top-up request submitted. Waiting for admin approval.",
+        "request_id": request_id,
+        "payment_token": payment_token
+    }
 
 @user_router.get("/my-plan")
 async def get_my_plan(current_user: dict = Depends(get_current_user)):
