@@ -346,6 +346,33 @@ const AdminPanel = () => {
                     </DialogContent>
                 </Dialog>
 
+
+
+                {/* Reset Password Dialog */}
+                <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                    <DialogContent className="bg-gray-800 border-gray-700">
+                        <DialogHeader>
+                            <DialogTitle className="text-white">Reset Password for {selectedUser?.name}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 mt-4">
+                            <div>
+                                <Label className="text-gray-300">Email: {selectedUser?.email}</Label>
+                            </div>
+                            <div>
+                                <Label className="text-gray-300">New Password</Label>
+                                <Input
+                                    type="password"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    className="bg-gray-900 border-gray-600 text-white"
+                                    placeholder="Enter new password"
+                                />
+                            </div>
+                            <Button onClick={handleResetPassword} className="w-full bg-purple-600">Reset Password</Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
                 {/* Recent Calls */}
                 <Card className="bg-gray-800 border-gray-700">
                     <CardHeader>
