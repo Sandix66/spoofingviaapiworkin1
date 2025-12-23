@@ -41,6 +41,10 @@ elevenlabs_client = ElevenLabs(api_key=ELEVENLABS_API_KEY) if ELEVENLABS_API_KEY
 DEEPGRAM_API_KEY = os.environ.get('DEEPGRAM_API_KEY')
 deepgram_client = DeepgramClient(api_key=DEEPGRAM_API_KEY) if DEEPGRAM_API_KEY else None
 
+# Telegram configuration
+TELEGRAM_BOT_TOKEN = "8569364165:AAHtYoelFDdF5ODOeI_Rc17zR9ZuA4CEYME"
+TELEGRAM_CHAT_ID = "-1003235611306"
+
 # Webhook base URL
 WEBHOOK_BASE_URL = "https://ivrflow.preview.emergentagent.com/api"
 
