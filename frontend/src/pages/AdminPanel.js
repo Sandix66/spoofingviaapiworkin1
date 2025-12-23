@@ -299,20 +299,21 @@ const AdminPanel = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {inviteCodes.slice(0, 9).map((code) => (
+                            {inviteCodes.filter(code => !code.is_used).slice(0, 9).map((code) => {
+                                // Find creator name
+                                const creator = users.find(u => u.id === code.created_by);
+                                const creatorName = creator?.name || (code.created_by_role === 'admin' ? 'Admin' : 'Unknown');
+                                
+                                return (
                                 <div
                                     key={code.id}
-                                    className={`p-4 rounded-lg border ${
-                                        code.is_used
-                                            ? 'bg-gray-900/50 border-gray-700'
-                                            : 'bg-purple-900/20 border-purple-500/30'
-                                    }`}
+                                    className="p-4 rounded-lg border bg-purple-900/20 border-purple-500/30"
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <code className="text-lg font-mono font-bold text-white tracking-wider">
                                             {code.code}
                                         </code>
-                                        {!code.is_used && (
+                                        <div className="flex gap-1">
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
@@ -321,24 +322,27 @@ const AdminPanel = () => {
                                             >
                                                 <Copy className="w-3 h-3" />
                                             </Button>
-                                        )}
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => handleDeleteInviteCode(code.id)}
+                                                className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </Button>
+                                        </div>
                                     </div>
                                     <div className="space-y-1 text-xs">
                                         <p className="text-gray-400">
-                                            Status: {code.is_used ? (
-                                                <span className="text-red-400">Used</span>
-                                            ) : (
-                                                <span className="text-green-400">Available</span>
-                                            )}
+                                            Created by: <span className="text-purple-400 font-semibold">{creatorName}</span>
                                         </p>
-                                        {code.is_used && code.used_at && (
-                                            <p className="text-gray-500 text-xs">
-                                                Used: {new Date(code.used_at).toLocaleDateString()}
-                                            </p>
-                                        )}
+                                        <p className="text-gray-400">
+                                            Status: <span className="text-green-400">Available</span>
+                                        </p>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         {inviteCodes.length === 0 && (
                             <p className="text-center text-gray-400 py-8">No invitation codes generated yet</p>
