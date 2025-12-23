@@ -1109,11 +1109,6 @@ async def get_my_invite(current_user: dict = Depends(get_current_user)):
     
     return {"code": code}
 
-        {"user_id": current_user["id"]},
-        {"_id": 0}
-    ).sort("created_at", -1).limit(limit).to_list(limit)
-    return {"calls": calls}
-
 @user_router.get("/credits")
 async def get_user_credits(current_user: dict = Depends(get_current_user)):
     """Get user's current credits"""
