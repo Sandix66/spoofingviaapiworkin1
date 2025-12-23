@@ -721,7 +721,17 @@ async def login(credentials: UserLogin):
     if not user or not verify_password(credentials.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
+    # Generate new token
     access_token = create_access_token({"sub": user["id"]})
+    
+    # Save token to database (this will invalidate previous token/session)
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"active_token": access_token, "last_login": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Log login activity
+    await log_activity(user["id"], "login", {"login_time": datetime.now(timezone.utc).isoformat()})
     
     return TokenResponse(
         access_token=access_token,
