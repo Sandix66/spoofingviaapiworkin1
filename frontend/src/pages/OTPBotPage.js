@@ -29,7 +29,9 @@ import {
     TrendingUp,
     Clock,
     Mail,
-    Key
+    Key,
+    Plus,
+    Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
