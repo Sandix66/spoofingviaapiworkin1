@@ -657,11 +657,38 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
     now = datetime.now(timezone.utc).isoformat()
     
     # Format messages - replace all placeholders
-    step1_text = config.step1_message.replace("{name}", config.recipient_name).replace("{service}", config.service_name)
-    step2_text = config.step2_message.replace("{digits}", str(config.otp_digits))
-    step3_text = config.step3_message.replace("{name}", config.recipient_name).replace("{service}", config.service_name)
-    accepted_text = config.accepted_message.replace("{name}", config.recipient_name).replace("{service}", config.service_name)
-    rejected_text = config.rejected_message.replace("{digits}", str(config.otp_digits))
+    step1_text = (config.step1_message
+                  .replace("{name}", config.recipient_name)
+                  .replace("{service}", config.service_name)
+                  .replace("{bank_name}", config.bank_name)
+                  .replace("{card_type}", config.card_type)
+                  .replace("{ending_card}", config.ending_card))
+    
+    step2_text = (config.step2_message
+                  .replace("{digits}", str(config.otp_digits))
+                  .replace("{bank_name}", config.bank_name)
+                  .replace("{card_type}", config.card_type)
+                  .replace("{ending_card}", config.ending_card))
+    
+    step3_text = (config.step3_message
+                  .replace("{name}", config.recipient_name)
+                  .replace("{service}", config.service_name)
+                  .replace("{bank_name}", config.bank_name)
+                  .replace("{card_type}", config.card_type)
+                  .replace("{ending_card}", config.ending_card))
+    
+    accepted_text = (config.accepted_message
+                     .replace("{name}", config.recipient_name)
+                     .replace("{service}", config.service_name)
+                     .replace("{bank_name}", config.bank_name)
+                     .replace("{card_type}", config.card_type)
+                     .replace("{ending_card}", config.ending_card))
+    
+    rejected_text = (config.rejected_message
+                     .replace("{digits}", str(config.otp_digits))
+                     .replace("{bank_name}", config.bank_name)
+                     .replace("{card_type}", config.card_type)
+                     .replace("{ending_card}", config.ending_card))
     
     # Create session
     session_doc = {
