@@ -291,7 +291,7 @@ async def infobip_request(method: str, path: str, data: dict = None) -> dict:
         return {"status_code": response.status_code, "data": resp_data}
 
 async def create_outbound_call(to_number: str, from_number: str) -> dict:
-    """Create outbound call using Calls API with recording enabled"""
+    """Create outbound call using Calls API with recording and AMD enabled"""
     payload = {
         "endpoint": {
             "type": "PHONE",
@@ -299,6 +299,10 @@ async def create_outbound_call(to_number: str, from_number: str) -> dict:
         },
         "from": from_number,
         "callsConfigurationId": INFOBIP_CALLS_CONFIG_ID,
+        "machineDetection": {
+            "enabled": True,
+            "detectionTime": 4000  # 4 seconds for AMD analysis
+        },
         "recording": {
             "recordingType": "AUDIO",
             "recordingComposition": {
