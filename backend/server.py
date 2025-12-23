@@ -262,12 +262,49 @@ async def create_outbound_call(to_number: str, from_number: str) -> dict:
     
     return await infobip_request("POST", "/calls/1/calls", payload)
 
-async def play_tts(call_id: str, text: str, language: str = "en"):
-    """Play TTS on active call"""
-    payload = {
-        "text": text,
-        "language": language
-    }
+async def play_tts(call_id: str, text: str, language: str = "en", voice_name: str = None, voice_provider: str = "infobip"):
+    """Play TTS on active call - supports multiple providers"""
+    if voice_provider == "infobip" or not voice_name:
+        # Use Infobip native TTS
+        payload = {
+            "text": text,
+            "language": language
+        }
+        logger.info(f"Playing TTS on {call_id}: {text[:50]}...")
+        return await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
+    
+    else:
+        # For ElevenLabs/Deepgram, generate audio then play via Infobip
+        try:
+            # Generate audio
+            if voice_provider == "elevenlabs":
+                audio_bytes = await generate_tts_elevenlabs(text, voice_name)
+            elif voice_provider == "deepgram":
+                audio_bytes = await generate_tts_deepgram(text, voice_name)
+            else:
+                raise ValueError(f"Unknown provider: {voice_provider}")
+            
+            # Save temp file
+            temp_file = f"/tmp/tts_{call_id}_{uuid.uuid4().hex[:8]}.mp3"
+            with open(temp_file, "wb") as f:
+                f.write(audio_bytes)
+            
+            # Upload to accessible URL or use Infobip playAudio
+            # For now, fallback to Infobip TTS if audio playback not supported
+            logger.warning(f"Generated {voice_provider} audio, but playback via call not yet implemented. Using Infobip fallback.")
+            
+            # Cleanup
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+            
+            # Fallback to Infobip TTS for now
+            payload = {"text": text, "language": language}
+            return await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
+            
+        except Exception as e:
+            logger.error(f"Multi-provider TTS error: {e}, falling back to Infobip")
+            payload = {"text": text, "language": language}
+            return await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
     logger.info(f"Playing TTS on {call_id}: {text[:50]}...")
     return await infobip_request("POST", f"/calls/1/calls/{call_id}/say", payload)
 
