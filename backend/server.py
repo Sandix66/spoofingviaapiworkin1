@@ -1384,19 +1384,16 @@ async def generate_tts_deepgram(text: str, voice_model: str) -> bytes:
         if not deepgram_client:
             raise HTTPException(status_code=500, detail="Deepgram not configured")
         
-        options = SpeakOptions(model=voice_model)
-        response = deepgram_client.speak.v("1").save(
-            "temp_audio.mp3",
-            {"text": text},
-            options
+        # Generate audio using Deepgram SDK v5.x
+        audio_generator = deepgram_client.speak.v1.audio.generate(
+            text=text,
+            model=voice_model
         )
         
-        # Read the generated file
-        with open("temp_audio.mp3", "rb") as f:
-            audio_bytes = f.read()
-        
-        # Cleanup
-        os.remove("temp_audio.mp3")
+        # Collect audio bytes from generator
+        audio_bytes = b""
+        for chunk in audio_generator:
+            audio_bytes += chunk
         
         return audio_bytes
     except Exception as e:
