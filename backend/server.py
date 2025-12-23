@@ -197,13 +197,6 @@ async def log_activity(user_id: str, action_type: str, details: dict = None):
     }
     await db.user_activities.insert_one(activity)
 
-            raise HTTPException(status_code=401, detail="User not found")
-        return user
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
 # ==================== SOCKET.IO EVENTS ====================
 
 @sio.event
