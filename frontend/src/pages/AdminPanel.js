@@ -142,6 +142,20 @@ const AdminPanel = () => {
     };
 
 
+    const handleDeleteInviteCode = async (codeId) => {
+        if (!confirm('Delete this invitation code?')) return;
+        
+        try {
+            await axios.delete(`${API}/admin/invitation-codes/${codeId}`, { headers: getAuthHeaders() });
+            toast.success('Invitation code deleted');
+            loadData();
+        } catch (error) {
+            toast.error('Failed to delete code');
+        }
+    };
+
+
+
 
     const handleAddCredits = async () => {
         try {
