@@ -744,7 +744,7 @@ async def register_with_invite(user_data: UserRegister):
         raise HTTPException(status_code=400, detail="Invitation code already used")
     
     # Check if email exists
-    existing = await db.users.find_one({"email": email}, {"_id": 0})
+    existing = await db.users.find_one({"email": user_data.email}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
@@ -754,15 +754,15 @@ async def register_with_invite(user_data: UserRegister):
     
     new_user = {
         "id": user_id,
-        "email": email,
-        "password_hash": hash_password(password),
-        "name": name,
+        "email": user_data.email,
+        "password_hash": hash_password(user_data.password),
+        "name": user_data.name,
         "role": "user",
         "credits": invite.get("credits_for_new_user", 10),
         "is_active": True,
         "created_at": now,
         "created_by": invite.get("created_by"),
-        "invited_by_code": invitation_code
+        "invited_by_code": user_data.invitation_code
     }
     
     await db.users.insert_one(new_user)
