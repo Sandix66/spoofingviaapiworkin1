@@ -29,6 +29,7 @@ const DashboardLayout = ({ children }) => {
     const navItems = [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { to: '/otp-bot', icon: Bot, label: 'OTP Bot' },
+        { to: '/topup', icon: CreditCard, label: 'Top-up' },
         { to: '/history', icon: History, label: 'History' },
         ...(user?.role === 'admin' ? [{ to: '/admin', icon: Shield, label: 'Admin Panel' }] : []),
         { to: '/profile', icon: User, label: 'Profile' },
