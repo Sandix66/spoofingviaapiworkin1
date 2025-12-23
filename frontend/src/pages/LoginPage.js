@@ -137,6 +137,12 @@ const LoginPage = () => {
                                     >
                                         {isLoading ? 'Memproses...' : 'Masuk'}
                                     </Button>
+
+                                    <div className="mt-6 text-center">
+                                        <Link to="/register" className="text-sm text-violet-400 hover:text-violet-300">
+                                            Don't have an account? Register with invitation code
+                                        </Link>
+                                    </div>
                                 </form>
                             </CardContent>
                         </TabsContent>
