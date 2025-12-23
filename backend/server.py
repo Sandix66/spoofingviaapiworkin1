@@ -992,6 +992,50 @@ async def change_password(password_data: PasswordChange, current_user: dict = De
 async def get_user_calls(limit: int = 50, current_user: dict = Depends(get_current_user)):
     """Get user's own call history"""
     calls = await db.call_history.find(
+
+
+@user_router.post("/generate-invite")
+async def user_generate_invite(current_user: dict = Depends(get_current_user)):
+    """User generates their own invitation code (1 per user)"""
+    # Check if user already generated a code
+    existing = await db.invitation_codes.find_one({
+        "created_by": current_user["id"],
+        "created_by_role": "user"
+    }, {"_id": 0})
+    
+    if existing:
+        return {"code": existing["code"], "is_used": existing["is_used"], "message": "You already have an invitation code"}
+    
+    # Generate new code
+    code = str(uuid.uuid4())[:8].upper()
+    
+    invite_doc = {
+        "id": str(uuid.uuid4()),
+        "code": code,
+        "created_by": current_user["id"],
+        "created_by_role": "user",
+        "credits_for_new_user": 10,  # Default 10 credits for user-generated invites
+        "is_used": False,
+        "used_by": None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "used_at": None
+    }
+    
+    await db.invitation_codes.insert_one(invite_doc)
+    await log_activity(current_user["id"], "invitation_code_generated", {"code": code})
+    
+    return {"code": code, "message": "Invitation code generated successfully"}
+
+@user_router.get("/my-invite")
+async def get_my_invite(current_user: dict = Depends(get_current_user)):
+    """Get user's own invitation code"""
+    code = await db.invitation_codes.find_one({
+        "created_by": current_user["id"],
+        "created_by_role": "user"
+    }, {"_id": 0})
+    
+    return {"code": code}
+
         {"user_id": current_user["id"]},
         {"_id": 0}
     ).sort("created_at", -1).limit(limit).to_list(limit)
