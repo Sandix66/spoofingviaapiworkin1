@@ -101,7 +101,7 @@ const LoginPage = () => {
 
                                     <div className="mt-6 text-center">
                                         <Link to="/register" className="text-sm text-violet-400 hover:text-violet-300">
-                                            Don't have an account? Register with invitation code
+                                            Don&apos;t have an account? Register with invitation code
                                         </Link>
                                     </div>
                                 </form>
