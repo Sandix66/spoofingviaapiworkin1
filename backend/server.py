@@ -236,8 +236,6 @@ async def create_outbound_call(to_number: str, from_number: str) -> dict:
         },
         "from": from_number,
         "callsConfigurationId": INFOBIP_CALLS_CONFIG_ID,
-        "notifyUrl": f"{WEBHOOK_BASE_URL}/otp/webhook/call-events",
-        "notifyContentType": "application/json",
         "recording": {
             "recordingType": "AUDIO",
             "recordingComposition": {
