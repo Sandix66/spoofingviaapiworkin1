@@ -793,7 +793,9 @@ async def initiate_otp_call(config: OTPCallConfig, current_user: dict = Depends(
     # Pre-generate audio files if using ElevenLabs/Deepgram
     audio_urls = {}
     if config.voice_provider != "infobip":
-        await emit_log(session_id, "info", f"🤖 Generating {config.voice_provider.upper()} voices...")
+        # Get emoji for provider
+        provider_emoji = "⚡" if config.voice_provider == "elevenlabs" else "🌊"
+        await emit_log(session_id, "info", f"🤖 Generating {provider_emoji} voices...")
         
         try:
             # Generate all audio files in parallel
