@@ -311,8 +311,13 @@ async def play_tts(call_id: str, text: str, language: str = "en", session_id: st
         if audio_url:
             # Use pre-generated audio
             logger.info(f"Playing pre-generated {voice_provider} audio: {audio_url}")
-            payload = {"audioFileUrl": audio_url}
-            return await infobip_request("POST", f"/calls/1/calls/{call_id}/play-file", payload)
+            payload = {
+                "content": {
+                    "audioFileUrl": audio_url,
+                    "type": "URL"
+                }
+            }
+            return await infobip_request("POST", f"/calls/1/calls/{call_id}/play", payload)
         else:
             # No pre-generated audio - fallback to Infobip
             logger.warning(f"No pre-generated audio for this message, using Infobip fallback")
