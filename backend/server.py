@@ -1153,6 +1153,72 @@ async def change_password(password_data: PasswordChange, current_user: dict = De
     """Change password"""
     user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
     if not verify_password(password_data.current_password, user["password_hash"]):
+
+
+@user_router.get("/dashboard-stats")
+async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
+    """Get dashboard statistics for current user"""
+    user_id = current_user["id"]
+    
+    # Get call history stats
+    pipeline = [
+        {"$match": {"user_id": user_id}},
+        {"$group": {
+            "_id": None,
+            "total_calls": {"$sum": 1},
+            "total_duration": {"$sum": "$duration_seconds"},
+            "total_cost": {"$sum": "$cost_credits"},
+            "successful": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}},
+            "failed": {"$sum": {"$cond": [{"$eq": ["$status", "failed"]}, 1, 0]}},
+            "busy": {"$sum": {"$cond": [{"$eq": ["$status", "busy"]}, 1, 0]}},
+            "no_answer": {"$sum": {"$cond": [{"$eq": ["$status", "no_answer"]}, 1, 0]}},
+            "voicemail": {"$sum": {"$cond": [{"$eq": ["$status", "voicemail_detected"]}, 1, 0]}}
+        }}
+    ]
+    
+    result = await db.call_history.aggregate(pipeline).to_list(1)
+    
+    # Count OTPs captured
+    otp_count = await db.otp_sessions.count_documents({
+        "user_id": user_id,
+        "otp_received": {"$exists": True, "$ne": None}
+    })
+    
+    if result:
+        stats = result[0]
+        total_calls = stats.get("total_calls", 0)
+        successful = stats.get("successful", 0)
+        success_rate = (successful / total_calls * 100) if total_calls > 0 else 0
+        avg_duration = stats.get("total_duration", 0) / total_calls if total_calls > 0 else 0
+        
+        return {
+            "total_calls": total_calls,
+            "successful": successful,
+            "failed": stats.get("failed", 0),
+            "busy": stats.get("busy", 0),
+            "no_answer": stats.get("no_answer", 0),
+            "voicemail": stats.get("voicemail", 0),
+            "otp_captured": otp_count,
+            "avg_duration_seconds": int(avg_duration),
+            "total_duration_seconds": stats.get("total_duration", 0),
+            "total_cost_credits": stats.get("total_cost", 0),
+            "success_rate": round(success_rate, 2)
+        }
+    
+    return {
+        "total_calls": 0,
+        "successful": 0,
+        "failed": 0,
+        "busy": 0,
+        "no_answer": 0,
+        "voicemail": 0,
+        "otp_captured": otp_count,
+        "avg_duration_seconds": 0,
+        "total_duration_seconds": 0,
+        "total_cost_credits": 0,
+        "success_rate": 0
+    }
+
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     
     new_password_hash = hash_password(password_data.new_password)
