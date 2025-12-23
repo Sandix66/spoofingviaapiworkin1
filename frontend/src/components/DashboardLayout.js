@@ -57,10 +57,12 @@ const DashboardLayout = ({ children }) => {
             <header className="lg:hidden fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
                 <div className="flex items-center justify-between px-4 py-3">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-lg shadow-cyan-500/50">
                             <Phone className="w-4 h-4 text-white" />
                         </div>
-                        <span className="font-bold text-lg">VoiceSpoof</span>
+                        <span className="font-bold text-lg bg-gradient-to-b from-cyan-400 to-cyan-600 bg-clip-text text-transparent" style={{
+                            filter: 'drop-shadow(0 0 2px #fbbf24)'
+                        }}>DINOSAUROTP</span>
                     </div>
                     <Button
                         variant="ghost"
