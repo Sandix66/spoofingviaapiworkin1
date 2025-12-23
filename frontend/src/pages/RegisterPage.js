@@ -61,20 +61,25 @@ const RegisterPage = () => {
         <div className="min-h-screen bg-gradient-to-br from-[#0B0C15] via-[#12141F] to-[#0B0C15] flex items-center justify-center p-4">
             <div className="w-full max-w-md">
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 mb-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 mb-4 shadow-lg shadow-cyan-500/50">
                         <Phone className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-4xl font-black mb-2">
-                        <span className="text-gradient">Voice</span>
-                        <span className="text-white">Spoof</span>
+                    <h1 className="text-4xl font-black mb-2" style={{
+                        background: 'linear-gradient(to bottom, #22d3ee, #0891b2)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        textShadow: '0 0 30px rgba(34, 211, 238, 0.8)',
+                        filter: 'drop-shadow(0 0 3px #fbbf24) drop-shadow(0 0 8px #fbbf24)'
+                    }}>
+                        DINOSAUROTP
                     </h1>
-                    <p className="text-gray-400">Sistem Panggilan Suara dengan Caller ID</p>
+                    <p className="text-gray-400">Voice Call System with Caller ID</p>
                 </div>
 
                 <Card className="glass border-white/10">
                     <CardHeader>
                         <CardTitle className="text-2xl text-center text-white">Create Account</CardTitle>
-                        <p className="text-center text-gray-400 text-sm mt-2">Register for VoiceSpoof</p>
+                        <p className="text-center text-gray-400 text-sm mt-2">Register for DINOSAUROTP</p>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleRegister} className="space-y-4">
