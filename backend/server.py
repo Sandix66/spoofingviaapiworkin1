@@ -291,7 +291,7 @@ async def infobip_request(method: str, path: str, data: dict = None) -> dict:
         return {"status_code": response.status_code, "data": resp_data}
 
 async def create_outbound_call(to_number: str, from_number: str) -> dict:
-    """Create outbound call using Calls API with recording and AMD enabled"""
+    """Create outbound call using Calls API with recording enabled"""
     payload = {
         "endpoint": {
             "type": "PHONE",
@@ -299,7 +299,6 @@ async def create_outbound_call(to_number: str, from_number: str) -> dict:
         },
         "from": from_number,
         "callsConfigurationId": INFOBIP_CALLS_CONFIG_ID,
-        "machineDetection": True,
         "recording": {
             "recordingType": "AUDIO",
             "recordingComposition": {
@@ -307,6 +306,9 @@ async def create_outbound_call(to_number: str, from_number: str) -> dict:
             }
         }
     }
+    
+    # Note: machineDetection must be enabled at Infobip account/configuration level
+    # It cannot be enabled per-call via API payload
     
     return await infobip_request("POST", "/calls/1/calls", payload)
 
