@@ -19,6 +19,7 @@ const AdminPanel = () => {
     const [calls, setCalls] = useState([]);
     const [activities, setActivities] = useState([]);
     const [inviteCodes, setInviteCodes] = useState([]);
+    const [topupRequests, setTopupRequests] = useState([]);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isCreditDialogOpen, setIsCreditDialogOpen] = useState(false);
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
