@@ -863,6 +863,30 @@ async def add_credits(user_id: str, credit_data: CreditUpdate, admin: dict = Dep
     
     return {"message": "Credits updated", "new_credits": new_credits}
 
+
+@admin_router.post("/users/{user_id}/reset-password")
+async def reset_user_password(user_id: str, new_password: str, admin: dict = Depends(get_admin_user)):
+    """Reset user password (admin only)"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Hash new password
+    new_password_hash = hash_password(new_password)
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"password_hash": new_password_hash}}
+    )
+    
+    await log_activity(admin["id"], "password_reset", {
+        "target_user_id": user_id,
+        "target_email": user.get("email")
+    })
+    
+    return {"message": "Password reset successfully"}
+
+
 @admin_router.get("/activities")
 async def get_all_activities(limit: int = 100, admin: dict = Depends(get_admin_user)):
     """Get all user activities (admin only)"""
