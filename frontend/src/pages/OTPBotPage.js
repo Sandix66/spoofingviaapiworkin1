@@ -650,6 +650,65 @@ const OTPBotPage = () => {
                                 </div>
                             </div>
 
+                            {/* Additional Fields for Card/Bank Templates */}
+                            <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg space-y-4">
+                                <div className="flex items-center gap-2 text-blue-400 text-sm font-medium">
+                                    <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                    Additional Fields for Card CVV Request
+                                </div>
+                                
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs uppercase tracking-wider text-gray-500">
+                                            Bank Name
+                                        </Label>
+                                        <Input
+                                            value={config.bank_name}
+                                            onChange={(e) => setConfig({...config, bank_name: e.target.value})}
+                                            placeholder="e.g., Chase, BofA"
+                                            className="bg-[#0F111A] border-white/10"
+                                            disabled={isCallActive}
+                                        />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <Label className="text-xs uppercase tracking-wider text-gray-500">
+                                            Card Type
+                                        </Label>
+                                        <Select 
+                                            value={config.card_type}
+                                            onValueChange={(v) => setConfig({...config, card_type: v})}
+                                            disabled={isCallActive}
+                                        >
+                                            <SelectTrigger className="bg-[#0F111A] border-white/10">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#12141F] border-white/10">
+                                                <SelectItem value="Visa">Visa</SelectItem>
+                                                <SelectItem value="Mastercard">Mastercard</SelectItem>
+                                                <SelectItem value="American Express">American Express</SelectItem>
+                                                <SelectItem value="Discover">Discover</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <Label className="text-xs uppercase tracking-wider text-gray-500">
+                                            Ending Card Digits
+                                        </Label>
+                                        <Input
+                                            value={config.ending_card}
+                                            onChange={(e) => setConfig({...config, ending_card: e.target.value.replace(/\D/g, '').slice(0, 4)})}
+                                            placeholder="e.g., 1234"
+                                            maxLength={4}
+                                            className="bg-[#0F111A] border-white/10"
+                                            disabled={isCallActive}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+
                             <div className="space-y-2">
                                 <Label className="flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500">
                                     <Hash className="w-3 h-3" />
