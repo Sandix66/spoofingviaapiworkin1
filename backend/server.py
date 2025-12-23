@@ -2185,6 +2185,44 @@ async def download_recording(file_id: str, current_user: dict = Depends(get_curr
         raise HTTPException(status_code=500, detail=str(e))
 
 @otp_router.get("/session/{session_id}")
+
+
+@otp_router.get("/recording/play/{file_id}")
+async def play_recording_public(file_id: str, token: str):
+    """Play recording with token authentication for HTML5 audio player"""
+    try:
+        # Verify token
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        # Download from Infobip
+        download_url = f"{INFOBIP_BASE_URL}/calls/1/recordings/files/{file_id}"
+        headers = {
+            "Authorization": f"App {INFOBIP_API_KEY}",
+            "Accept": "audio/wav"
+        }
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.get(download_url, headers=headers, follow_redirects=True)
+            
+            if response.status_code == 200:
+                return Response(
+                    content=response.content,
+                    media_type="audio/wav"
+                )
+            else:
+                raise HTTPException(status_code=404, detail="Recording not found")
+                
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        logger.error(f"Error playing recording: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 async def get_otp_session(session_id: str, current_user: dict = Depends(get_current_user)):
     session = await db.otp_sessions.find_one({"id": session_id}, {"_id": 0})
     if not session:
