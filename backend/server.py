@@ -435,6 +435,67 @@ async def fetch_and_emit_recording(session_id: str, call_id: str):
         
         logger.warning(f"No recording found for call {call_id}")
         
+
+
+async def save_call_history(session_id: str, session: dict, call_id: str, status: str):
+    """Helper function to save call history"""
+    call_start_time = session.get("call_start_time")
+    if not call_start_time:
+        logger.warning(f"No call_start_time for session {session_id}, cannot save history")
+        return
+    
+    try:
+        start_dt = datetime.fromisoformat(call_start_time.replace('Z', '+00:00'))
+        end_dt = datetime.now(timezone.utc)
+        duration_seconds = int((end_dt - start_dt).total_seconds())
+        
+        # Calculate cost
+        import math
+        duration_minutes = math.ceil(duration_seconds / 60)
+        cost_credits = max(1, duration_minutes)
+        
+        # Deduct remaining credits
+        additional_credits = cost_credits - 1
+        if additional_credits > 0:
+            await db.users.update_one(
+                {"id": session.get("user_id")},
+                {"$inc": {"credits": -additional_credits}}
+            )
+        
+        # Save to call_history
+        call_history_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": session.get("user_id"),
+            "session_id": session_id,
+            "call_id": call_id,
+            "recipient_number": session.get("recipient_number"),
+            "duration_seconds": duration_seconds,
+            "cost_credits": cost_credits,
+            "status": status,
+            "voice_provider": session.get("voice_provider", "infobip"),
+            "voice_name": session.get("voice_name", "default"),
+            "template_type": "custom",
+            "recording_url": session.get("recording_url"),
+            "recording_file_id": session.get("recording_file_id"),
+            "created_at": call_start_time,
+            "ended_at": end_dt.isoformat()
+        }
+        await db.call_history.insert_one(call_history_doc)
+        
+        # Log activity
+        await log_activity(session.get("user_id"), "call_ended", {
+            "session_id": session_id,
+            "duration_seconds": duration_seconds,
+            "cost_credits": cost_credits,
+            "status": status
+        })
+        
+        await emit_log(session_id, "info", f"💰 Call cost: {cost_credits} credits ({duration_minutes} min)")
+        logger.info(f"Call history saved: {session_id}, duration={duration_seconds}s, cost={cost_credits}")
+        
+    except Exception as e:
+        logger.error(f"Error saving call history: {e}")
+
     except Exception as e:
         logger.error(f"Error fetching recording: {e}")
 
