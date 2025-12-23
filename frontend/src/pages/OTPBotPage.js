@@ -388,6 +388,19 @@ const OTPBotPage = () => {
         }
 
         setIsLoading(true);
+        
+        try {
+            // Check credits first
+            const creditsRes = await axios.get(`${API}/user/credits`, { headers: getAuthHeaders() });
+            const availableCredits = creditsRes.data.credits;
+            
+            if (availableCredits < 1) {
+                toast.error('Insufficient credits! Please contact admin to add credits.');
+                setIsLoading(false);
+                return;
+            }
+            
+            toast.info(`Credits available: ${availableCredits.toFixed(0)}. Starting call...`);
         setLogs([]);
         setOtpReceived(null);
         setAmdResult(null);
