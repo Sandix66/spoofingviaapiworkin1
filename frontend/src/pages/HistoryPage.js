@@ -106,9 +106,8 @@ const HistoryPage = () => {
     // Filter calls
     const filteredCalls = calls.filter(call => {
         const matchesSearch = 
-            call.phone_number.includes(searchQuery) ||
-            call.caller_id.includes(searchQuery) ||
-            call.message_text.toLowerCase().includes(searchQuery.toLowerCase());
+            (call.recipient_number || '').includes(searchQuery) ||
+            (call.session_id || '').includes(searchQuery);
         
         const matchesStatus = statusFilter === 'all' || call.status === statusFilter;
         
