@@ -93,6 +93,22 @@ function AppRoutes() {
                     </ProtectedRoute>
                 } 
             />
+            <Route 
+                path="/admin" 
+                element={
+                    <ProtectedRoute>
+                        <AdminPanel />
+                    </ProtectedRoute>
+                } 
+            />
+            <Route 
+                path="/profile" 
+                element={
+                    <ProtectedRoute>
+                        <ProfilePage />
+                    </ProtectedRoute>
+                } 
+            />
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
