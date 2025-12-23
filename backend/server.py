@@ -435,7 +435,19 @@ async def fetch_and_emit_recording(session_id: str, call_id: str):
                         # Update call_history with recording info
                         await db.call_history.update_one(
                             {"session_id": session_id},
-
+                            {"$set": {"recording_file_id": file_id, "recording_duration": duration}}
+                        )
+                        
+                        logger.info(f"Recording file ID saved: {file_id}")
+                        return
+            
+            # Wait before retry
+            await asyncio.sleep(3)
+        
+        logger.warning(f"No recording found for call {call_id}")
+        
+    except Exception as e:
+        logger.error(f"Error fetching recording: {e}")
 
 # ==================== TELEGRAM NOTIFICATION ====================
 
