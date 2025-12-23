@@ -1354,6 +1354,81 @@ async def get_otp_sessions(current_user: dict = Depends(get_current_user)):
     ).sort("created_at", -1).limit(50).to_list(50)
     return sessions
 
+
+# ==================== TTS HELPER FUNCTIONS ====================
+
+async def generate_tts_elevenlabs(text: str, voice_name: str) -> bytes:
+    """Generate TTS using ElevenLabs"""
+    try:
+        if not elevenlabs_client:
+            raise HTTPException(status_code=500, detail="ElevenLabs not configured")
+        
+        audio_generator = elevenlabs_client.text_to_speech.convert(
+            voice_id=voice_name,
+            text=text,
+            model_id="eleven_turbo_v2_5"
+        )
+        
+        audio_bytes = b""
+        for chunk in audio_generator:
+            audio_bytes += chunk
+        
+        return audio_bytes
+    except Exception as e:
+        logger.error(f"ElevenLabs TTS error: {e}")
+        raise HTTPException(status_code=500, detail=f"ElevenLabs error: {str(e)}")
+
+async def generate_tts_deepgram(text: str, voice_model: str) -> bytes:
+    """Generate TTS using Deepgram"""
+    try:
+        if not deepgram_client:
+            raise HTTPException(status_code=500, detail="Deepgram not configured")
+        
+        options = SpeakOptions(model=voice_model)
+        response = deepgram_client.speak.v("1").save(
+            "temp_audio.mp3",
+            {"text": text},
+            options
+        )
+        
+        # Read the generated file
+        with open("temp_audio.mp3", "rb") as f:
+            audio_bytes = f.read()
+        
+        # Cleanup
+        os.remove("temp_audio.mp3")
+        
+        return audio_bytes
+    except Exception as e:
+        logger.error(f"Deepgram TTS error: {e}")
+        raise HTTPException(status_code=500, detail=f"Deepgram error: {str(e)}")
+
+@voice_router.post("/preview")
+async def preview_voice(
+    text: str, 
+    voice_name: str, 
+    voice_provider: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate preview audio for selected voice"""
+    try:
+        if voice_provider == "elevenlabs":
+            audio_bytes = await generate_tts_elevenlabs(text, voice_name)
+            media_type = "audio/mpeg"
+        elif voice_provider == "deepgram":
+            audio_bytes = await generate_tts_deepgram(text, voice_name)
+            media_type = "audio/mpeg"
+        else:
+            # For Infobip, we can't generate preview without active call
+            raise HTTPException(status_code=400, detail="Preview not available for Infobip voices")
+        
+        return Response(content=audio_bytes, media_type=media_type)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Voice preview error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ==================== VOICE ROUTES ====================
 
 @voice_router.get("/history")
