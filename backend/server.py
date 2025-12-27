@@ -1674,7 +1674,7 @@ async def create_veripay_transaction(
                 
                 # Save pending transaction
                 transaction_doc = {
-                    "id": transaction_id,
+                    "id": order_id,
                     "user_id": current_user["id"],
                     "package_type": package_type,
                     "package_id": package_id,
