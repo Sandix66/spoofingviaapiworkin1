@@ -48,7 +48,8 @@ TELEGRAM_CHAT_ID = "-1003235611306"
 
 # Veripay configuration
 VERIPAY_API_KEY = "124|r2oQjMbrrOu50nsBM36nZ7wc2MwsPiPJlgMq1Szu164952b1"
-VERIPAY_BASE_URL = "https://veripay.site/api"
+VERIPAY_SECRET_KEY = "NDQZ9VDXHA7KECMEOOZXI6HTXRAC8LUK"
+VERIPAY_BASE_URL = "https://veripay.site"
 
 
 # Webhook base URL
