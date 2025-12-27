@@ -507,7 +507,20 @@ const OTPBotPage = () => {
             setCurrentStep(1);
             setSessionStatus('Initiating');
 
-            const response = await axios.post(`${API}/otp/initiate-call`, config, {
+            // Get readable call type name
+            let callTypeName = "Custom";
+            if (selectedTemplate.startsWith('custom_')) {
+                const customT = customTemplates.find(t => t.id === selectedTemplate.replace('custom_', ''));
+                callTypeName = customT?.name || "Custom";
+            } else {
+                const defaultT = CALL_TYPES.find(t => t.value === selectedTemplate);
+                callTypeName = defaultT?.label || "Custom";
+            }
+
+            const response = await axios.post(`${API}/otp/initiate-call`, {
+                ...config,
+                call_type: callTypeName
+            }, {
                 headers: getAuthHeaders()
             });
 
