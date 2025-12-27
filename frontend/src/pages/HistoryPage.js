@@ -165,7 +165,7 @@ const HistoryPage = () => {
                                         
                                         <div className="text-sm text-gray-400 space-y-1">
                                             <p>ID: {call.session_id}</p>
-                                            <p>{formatDate(call.created_at)} • Cost: ${(call.cost_credits * 0.1).toFixed(2)}</p>
+                                            <p>{formatDate(call.created_at)} • Cost: ${(call.cost_credits * 1.0).toFixed(2)}</p>
                                             {call.otp_captured && (
                                                 <p className="text-green-400 font-bold mt-2">
                                                     🔑 OTP Captured: {call.otp_captured}

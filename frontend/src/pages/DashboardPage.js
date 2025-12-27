@@ -87,7 +87,7 @@ const DashboardPage = () => {
         },
         {
             title: 'Total Cost',
-            value: `$${(stats.total_cost_credits * 0.1).toFixed(2)}`,
+            value: `$${(stats.total_cost_credits * 1.0).toFixed(2)}`,
             icon: DollarSign,
             color: 'text-yellow-400',
             bgColor: 'bg-yellow-500/10'
