@@ -1692,16 +1692,28 @@ async def create_veripay_transaction(
                 
                 await db.veripay_transactions.insert_one(transaction_doc)
                 
+                # Fetch payment details from Veripay page
+                payment_info = {}
+                if veripay_data.get("payment_url"):
+                    try:
+                        # Fetch the payment page to extract details
+                        async with httpx.AsyncClient(timeout=10.0) as detail_client:
+                            detail_response = await detail_client.get(veripay_data.get("payment_url"))
+                            payment_info["page_html"] = detail_response.text[:500]  # For debugging
+                    except:
+                        pass
+                
                 return {
                     "transaction_id": order_id,
                     "payment_url": veripay_data.get("payment_url"),
-                    "qr_code_url": f"/api/payment/qr-code/{order_id}" if payment_method == "QRIS" else None,
+                    "qr_code_url": f"/api/payment/qr-code/{order_id}",
                     "amount": payment_calc["final_amount"],
                     "unique_code": payment_calc["unique_code"],
                     "payment_method": payment_method,
                     "veripay_ref": veripay_data.get("transaction_ref"),
-                    "bank_info": veripay_data.get("bank_account"),
-                    "ewallet_options": veripay_data.get("ewallet_options")
+                    "metadata": veripay_data.get("metadata", {}),
+                    "gross_amount": veripay_data.get("gross_amount"),
+                    "qris_deposit_id": veripay_data.get("metadata", {}).get("qris_deposit_id")
                 }
             else:
                 raise HTTPException(status_code=500, detail="Veripay API error")
