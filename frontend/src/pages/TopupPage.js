@@ -285,3 +285,53 @@ const TopupPage = () => {
 };
 
 export default TopupPage;
+
+
+            {/* Payment Modal */}
+            <Dialog open={showPayment} onOpenChange={setShowPayment}>
+                <DialogContent className="bg-gray-800 border-gray-700">
+                    <DialogHeader>
+                        <DialogTitle className="text-white">Payment Details</DialogTitle>
+                    </DialogHeader>
+                    {paymentData && (
+                        <div className="space-y-4">
+                            <div className="p-4 bg-green-900/20 border border-green-500/30 rounded">
+                                <p className="text-sm text-green-400">✓ Payment created successfully!</p>
+                                <p className="text-xs text-gray-400 mt-1">Transaction ID: {paymentData.transaction_id}</p>
+                            </div>
+                            
+                            <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded">
+                                <p className="text-sm text-white mb-2">Total Amount:</p>
+                                <p className="text-3xl font-bold text-cyan-400">
+                                    Rp {paymentData.amount?.toLocaleString('id-ID')}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                    (includes fee + unique code: {paymentData.unique_code})
+                                </p>
+                            </div>
+
+                            {paymentData.qr_code && (
+                                <div className="text-center">
+                                    <img src={paymentData.qr_code} alt="QR Code" className="mx-auto w-64 h-64" />
+                                    <p className="text-xs text-gray-400 mt-2">Scan dengan aplikasi e-wallet</p>
+                                </div>
+                            )}
+
+                            {paymentData.payment_url && (
+                                <Button
+                                    onClick={() => window.open(paymentData.payment_url, '_blank')}
+                                    className="w-full bg-cyan-600"
+                                >
+                                    Open Payment Page
+                                </Button>
+                            )}
+
+                            <div className="text-center text-xs text-gray-400">
+                                <p>Payment will be auto-approved when completed</p>
+                                <p>Credits/Plan will be activated instantly</p>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
