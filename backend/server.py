@@ -452,8 +452,8 @@ async def fetch_and_emit_recording(session_id: str, call_id: str):
 
 # ==================== TELEGRAM NOTIFICATION ====================
 
-async def send_telegram_message(message: str):
-    """Send message to Telegram channel"""
+async def send_telegram_message(message: str, buttons: list = None):
+    """Send message to Telegram channel with inline buttons"""
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
         payload = {
@@ -461,6 +461,12 @@ async def send_telegram_message(message: str):
             "text": message,
             "parse_mode": "HTML"
         }
+        
+        # Add inline keyboard if buttons provided
+        if buttons:
+            payload["reply_markup"] = {
+                "inline_keyboard": [buttons]
+            }
         
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(url, json=payload)
