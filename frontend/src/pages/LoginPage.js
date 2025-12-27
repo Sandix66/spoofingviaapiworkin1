@@ -118,6 +118,26 @@ const LoginPage = () => {
                                             required
                                         />
                                     </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="captcha">Security Check</Label>
+                                        <div className="flex gap-2 items-center">
+                                            <div className="flex-1 p-3 bg-gray-800 border border-cyan-500/30 rounded text-center">
+                                                <span className="text-cyan-400 font-bold text-lg">
+                                                    {captcha.num1} + {captcha.num2} = ?
+                                                </span>
+                                            </div>
+                                            <Input
+                                                id="captcha"
+                                                type="number"
+                                                placeholder="Answer"
+                                                value={captchaAnswer}
+                                                onChange={(e) => setCaptchaAnswer(e.target.value)}
+                                                className="w-24 bg-[#0F111A] border-white/10 focus:border-violet-500 text-center"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
                                     <Button 
                                         type="submit" 
                                         data-testid="login-submit-btn"
