@@ -16,9 +16,32 @@ const LoginPage = () => {
     // Login form state
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
+    const [captchaAnswer, setCaptchaAnswer] = useState('');
+    
+    // Generate random captcha
+    const [captcha, setCaptcha] = useState({ num1: 0, num2: 0, answer: 0 });
+    
+    useEffect(() => {
+        generateCaptcha();
+    }, []);
+    
+    const generateCaptcha = () => {
+        const num1 = Math.floor(Math.random() * 10) + 1;
+        const num2 = Math.floor(Math.random() * 10) + 1;
+        setCaptcha({ num1, num2, answer: num1 + num2 });
+    };
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        
+        // Validate captcha
+        if (parseInt(captchaAnswer) !== captcha.answer) {
+            toast.error('Captcha incorrect! Please try again.');
+            generateCaptcha();
+            setCaptchaAnswer('');
+            return;
+        }
+        
         setIsLoading(true);
         try {
             await login(loginEmail, loginPassword);
