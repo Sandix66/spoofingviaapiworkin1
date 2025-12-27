@@ -279,12 +279,6 @@ const TopupPage = () => {
                     </div>
                 </TabsContent>
             </Tabs>
-        </div>
-    );
-};
-
-export default TopupPage;
-
 
             {/* Payment Modal */}
             <Dialog open={showPayment} onOpenChange={setShowPayment}>
@@ -330,13 +324,12 @@ export default TopupPage;
                                 <p>Credits/Plan will be activated instantly</p>
                             </div>
                         </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
 
 export default TopupPage;
-
-                    )}
-                </DialogContent>
-            </Dialog>
 
