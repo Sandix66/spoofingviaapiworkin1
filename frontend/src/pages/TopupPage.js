@@ -303,20 +303,32 @@ const TopupPage = () => {
                                 </p>
                             </div>
 
-                            {paymentData.qr_code && (
-                                <div className="text-center">
-                                    <img src={paymentData.qr_code} alt="QR Code" className="mx-auto w-64 h-64" />
-                                    <p className="text-xs text-gray-400 mt-2">Scan dengan aplikasi e-wallet</p>
+                            {/* QR Code for QRIS/E-wallet */}
+                            {paymentData.payment_method !== 'BANK_TRANSFER' && paymentData.qr_code_url && (
+                                <div className="text-center p-4 bg-white rounded-lg">
+                                    <img 
+                                        src={`${BACKEND_URL}${paymentData.qr_code_url}`} 
+                                        alt="QR Code" 
+                                        className="mx-auto w-64 h-64" 
+                                    />
+                                    <p className="text-sm text-gray-800 mt-2 font-semibold">Scan dengan aplikasi e-wallet</p>
                                 </div>
                             )}
 
-                            {paymentData.payment_url && (
-                                <Button
-                                    onClick={() => window.open(paymentData.payment_url, '_blank')}
-                                    className="w-full bg-cyan-600"
-                                >
-                                    Open Payment Page
-                                </Button>
+                            {/* Bank Transfer Instructions */}
+                            {paymentData.payment_method === 'BANK_TRANSFER' && paymentData.payment_url && (
+                                <div className="p-4 bg-yellow-900/20 border border-yellow-500/30 rounded">
+                                    <p className="text-sm text-yellow-200 mb-2">Bank Transfer Instructions:</p>
+                                    <p className="text-xs text-gray-400">1. Transfer to account shown on payment page</p>
+                                    <p className="text-xs text-gray-400">2. Use exact amount with unique code</p>
+                                    <p className="text-xs text-gray-400">3. Payment auto-approved within minutes</p>
+                                    <Button
+                                        onClick={() => window.open(paymentData.payment_url, '_blank')}
+                                        className="w-full mt-3 bg-yellow-600"
+                                    >
+                                        View Bank Account Details
+                                    </Button>
+                                </div>
                             )}
 
                             <div className="text-center text-xs text-gray-400">
