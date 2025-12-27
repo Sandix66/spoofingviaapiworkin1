@@ -1829,7 +1829,7 @@ async def get_qr_code_proxy(order_id: str, token: str):
         if not transaction:
             raise HTTPException(status_code=404, detail="Transaction not found")
         
-        if transaction.get("user_id") != current_user["id"]:
+        if transaction.get("user_id") != user_id:
             raise HTTPException(status_code=403, detail="Unauthorized")
         
         payment_url = transaction.get("veripay_data", {}).get("payment_url")
