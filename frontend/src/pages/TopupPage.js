@@ -91,12 +91,8 @@ const TopupPage = () => {
             setPaymentData(response.data);
             setShowPayment(true);
             
-            // Redirect to payment page if URL available
-            if (response.data.payment_url) {
-                window.open(response.data.payment_url, '_blank');
-            }
-            
-            toast.success('Payment created! Complete payment to activate.');
+            // Don't redirect - show QR in modal instead
+            toast.success('Scan QR code to complete payment');
         } catch (error) {
             toast.error(error.response?.data?.detail || 'Failed to create payment');
         } finally {
