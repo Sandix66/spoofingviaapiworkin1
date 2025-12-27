@@ -1624,6 +1624,9 @@ async def create_veripay_transaction(
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(veripay_url, json=payload, headers=headers)
             
+            logger.info(f"Veripay response status: {response.status_code}")
+            logger.info(f"Veripay response body: {response.text}")
+            
             if response.status_code in [200, 201]:
                 veripay_data = response.json()
                 
