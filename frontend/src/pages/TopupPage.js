@@ -12,12 +12,11 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const TopupPage = () => {
-    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('QRIS');
     const [showPayment, setShowPayment] = useState(false);
     const [paymentData, setPaymentData] = useState(null);
-
 
     const getAuthHeaders = () => {
         const token = localStorage.getItem('token');
