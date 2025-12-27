@@ -351,17 +351,36 @@ const OTPBotPage = () => {
                 setRecordingUrl(log.data.url);
             }
             
-            // Handle call completed
-            if (log.type === 'info' && log.message.includes('Call ended')) {
+            // Handle call completed/ended - Reset UI state
+            if (log.type === 'info' && (log.message.includes('Call ended') || log.message.includes('completed successfully'))) {
                 setIsCallActive(false);
                 setSessionStatus('Completed');
+                // Reset for next call
+                setTimeout(() => {
+                    setSessionId(null);
+                    setCallId(null);
+                    setCurrentStep(0);
+                }, 3000); // Wait 3 seconds before reset
+            }
+            
+            // Handle no answer, busy, voicemail - Stop UI
+            if (log.type === 'no_answer' || log.type === 'busy' || 
+                log.message.includes('Voicemail detected') || 
+                log.message.includes('Fax detected') ||
+                log.message.includes('Music detected')) {
+                setIsCallActive(false);
+                setTimeout(() => {
+                    setSessionId(null);
+                    setCallId(null);
+                    setCurrentStep(0);
+                }, 3000);
             }
             
             // Update status based on log type
             if (log.type === 'ringing') setSessionStatus('Ringing');
             if (log.type === 'answered') setSessionStatus('Answered');
-            if (log.type === 'busy') setSessionStatus('Busy');
-            if (log.type === 'no_answer') setSessionStatus('No Answer');
+            if (log.type === 'busy') { setSessionStatus('Busy'); setIsCallActive(false); }
+            if (log.type === 'no_answer') { setSessionStatus('No Answer'); setIsCallActive(false); }
             if (log.type === 'rejected') setSessionStatus('Rejected');
         });
 
