@@ -317,7 +317,7 @@ const TopupPage = () => {
                             )}
 
                             {/* E-Wallet Payment */}
-                            {paymentData.payment_method === 'EWALLET' && (
+                            {paymentData.payment_method === 'EWALLET' && paymentData.qr_code_url && (
                                 <div className="space-y-3">
                                     <div className="text-center p-6 bg-white rounded-lg">
                                         <img 
@@ -325,62 +325,68 @@ const TopupPage = () => {
                                             alt="QR Code" 
                                             className="mx-auto w-72 h-72 border-4 border-gray-200" 
                                         />
-                                        <p className="text-sm text-gray-800 mt-4 font-semibold">Scan dengan e-wallet app Anda</p>
+                                        <p className="text-sm text-gray-800 mt-4 font-semibold">Scan QR atau pilih wallet:</p>
                                     </div>
                                     <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded">
-                                        <p className="text-sm text-blue-200 font-semibold mb-2">Supported E-Wallets:</p>
-                                        <div className="grid grid-cols-2 gap-2 text-center">
-                                            <div className="p-2 bg-blue-600 rounded text-white text-xs font-bold">DANA</div>
-                                            <div className="p-2 bg-purple-600 rounded text-white text-xs font-bold">OVO</div>
-                                            <div className="p-2 bg-green-600 rounded text-white text-xs font-bold">GoPay</div>
-                                            <div className="p-2 bg-orange-600 rounded text-white text-xs font-bold">ShopeePay</div>
+                                        <p className="text-sm text-blue-200 font-semibold mb-3">Supported E-Wallets:</p>
+                                        <div className="grid grid-cols-2 gap-2 mb-3">
+                                            <div className="p-3 bg-blue-600 rounded text-white text-center font-bold">DANA</div>
+                                            <div className="p-3 bg-purple-600 rounded text-white text-center font-bold">OVO</div>
+                                            <div className="p-3 bg-green-600 rounded text-white text-center font-bold">GoPay</div>
+                                            <div className="p-3 bg-orange-600 rounded text-white text-center font-bold">ShopeePay</div>
                                         </div>
-                                        <p className="text-xs text-gray-400 mt-3 text-center">Scan QR code above with any e-wallet app</p>
+                                        {paymentData.payment_url && (
+                                            <Button
+                                                onClick={() => window.open(paymentData.payment_url, '_blank')}
+                                                className="w-full bg-blue-600 hover:bg-blue-700"
+                                            >
+                                                Select E-Wallet & Pay →
+                                            </Button>
+                                        )}
+                                        <p className="text-xs text-gray-400 mt-2 text-center">Opens in new tab - select your wallet and complete payment</p>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Bank Transfer - NO REDIRECT */}
+                            {/* Bank Transfer */}
                             {paymentData.payment_method === 'BANK_TRANSFER' && (
                                 <div className="space-y-3">
                                     <div className="p-4 bg-yellow-900/20 border border-yellow-500/30 rounded">
-                                        <p className="text-sm text-yellow-200 mb-3 font-semibold">Transfer Details:</p>
-                                        <div className="space-y-3">
-                                            <div className="p-3 bg-gray-900 rounded">
-                                                <p className="text-xs text-gray-400">Transfer Amount:</p>
-                                                <p className="text-2xl text-cyan-400 font-bold">Rp {paymentData.amount?.toLocaleString('id-ID')}</p>
-                                                <p className="text-xs text-yellow-400 mt-1">⚠️ Must include unique code: {paymentData.unique_code}</p>
+                                        <p className="text-lg text-yellow-200 mb-3 font-bold text-center">Bank Transfer Payment</p>
+                                        
+                                        <div className="p-4 bg-gray-900 rounded mb-3">
+                                            <p className="text-xs text-gray-400 mb-1">Transfer Amount:</p>
+                                            <p className="text-3xl text-cyan-400 font-bold">Rp {paymentData.amount?.toLocaleString('id-ID')}</p>
+                                            <p className="text-sm text-yellow-400 mt-2">Unique Code: {paymentData.unique_code}</p>
+                                        </div>
+                                        
+                                        <div className="mb-3">
+                                            <p className="text-xs text-gray-300 font-semibold mb-2">Available Banks:</p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {['BCA', 'BNI', 'BRI', 'Mandiri'].map(bank => (
+                                                    <div key={bank} className="p-2 bg-blue-600/20 border border-blue-500/30 rounded text-center">
+                                                        <p className="text-white font-bold">{bank}</p>
+                                                    </div>
+                                                ))}
                                             </div>
-                                            
-                                            <div className="space-y-2">
-                                                <p className="text-xs text-gray-300 font-semibold">Available Banks:</p>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    {['BCA', 'BNI', 'BRI', 'Mandiri'].map(bank => (
-                                                        <div key={bank} className="p-2 bg-blue-600/20 border border-blue-500/30 rounded text-center">
-                                                            <p className="text-white font-bold text-sm">{bank}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="p-3 bg-blue-900/20 border border-blue-500/30 rounded">
-                                                <p className="text-xs text-blue-200 mb-2">Transfer Steps:</p>
-                                                <ol className="text-xs text-gray-300 space-y-1">
-                                                    <li>1. Transfer ke rekening yang akan muncul di halaman berikutnya</li>
-                                                    <li>2. Gunakan jumlah EXACT dengan kode unik</li>
-                                                    <li>3. Payment auto-verified dalam 5-10 menit</li>
-                                                </ol>
-                                            </div>
-                                            
-                                            <Button
-                                                onClick={() => window.open(paymentData.payment_url, '_blank')}
-                                                className="w-full bg-yellow-600 hover:bg-yellow-700"
-                                            >
-                                                Get Bank Account Number →
-                                            </Button>
-                                            <p className="text-xs text-gray-500 text-center">
-                                                (Will open in new tab, close after noting account number)
-                                            </p>
+                                        </div>
+                                        
+                                        {paymentData.payment_url && (
+                                            <>
+                                                <Button
+                                                    onClick={() => window.open(paymentData.payment_url, '_blank')}
+                                                    className="w-full bg-yellow-600 hover:bg-yellow-700 mb-2"
+                                                >
+                                                    View Bank Account & Transfer →
+                                                </Button>
+                                                <p className="text-xs text-gray-400 text-center">
+                                                    Opens secure payment page - view account number, transfer, then close tab
+                                                </p>
+                                            </>
+                                        )}
+                                        
+                                        <div className="mt-3 p-3 bg-green-900/20 border border-green-500/30 rounded">
+                                            <p className="text-xs text-green-200">✓ Auto-verified dalam 5-10 menit setelah transfer</p>
                                         </div>
                                     </div>
                                 </div>
