@@ -2975,6 +2975,7 @@ async def health_check():
 api_router.include_router(auth_router)
 api_router.include_router(admin_router)
 api_router.include_router(user_router)
+api_router.include_router(payment_router)
 api_router.include_router(voice_router)
 api_router.include_router(otp_router)
 fastapi_app.include_router(api_router)
