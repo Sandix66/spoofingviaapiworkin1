@@ -71,6 +71,40 @@ const TopupPage = () => {
         }
     };
 
+
+    const handleAutoPayment = async (packageType, packageId, amountIdr) => {
+        setLoading(true);
+        try {
+            const response = await axios.post(
+                `${API}/payment/create-transaction`,
+                null,
+                {
+                    params: {
+                        package_type: packageType,
+                        package_id: packageId,
+                        payment_method: paymentMethod
+                    },
+                    headers: getAuthHeaders()
+                }
+            );
+            
+            setPaymentData(response.data);
+            setShowPayment(true);
+            
+            // Redirect to payment page if URL available
+            if (response.data.payment_url) {
+                window.open(response.data.payment_url, '_blank');
+            }
+            
+            toast.success('Payment created! Complete payment to activate.');
+        } catch (error) {
+            toast.error(error.response?.data?.detail || 'Failed to create payment');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
     const formatIDR = (amount) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
