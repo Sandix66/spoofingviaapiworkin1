@@ -1602,23 +1602,64 @@ async def create_veripay_transaction(
     # Calculate with gross-up
     payment_calc = calculate_gross_up(original_price, payment_method)
     
-    # Create transaction ID
-    transaction_id = f"TRX{uuid.uuid4().hex[:12].upper()}"
+    # Create transaction ID (order_id)
+    order_id = f"ORD-{int(datetime.now(timezone.utc).timestamp())}"
+    
+    # Generate Veripay signature
+    import time
+    import hmac
+    import hashlib
+    import base64
+    
+    timestamp = int(time.time())
+    signature_payload = f"{VERIPAY_API_KEY}{timestamp}"
+    signature = base64.b64encode(
+        hmac.new(
+            VERIPAY_SECRET_KEY.encode(),
+            signature_payload.encode(),
+            hashlib.sha256
+        ).digest()
+    ).decode()
     
     # Call Veripay API
-    veripay_url = f"{VERIPAY_BASE_URL}/create-transaction"
+    veripay_url = f"{VERIPAY_BASE_URL}/api/v1/merchant/payments"
     headers = {
         "Authorization": f"Bearer {VERIPAY_API_KEY}",
+        "x-api-key": VERIPAY_API_KEY,
+        "x-timestamp": str(timestamp),
+        "x-signature": signature,
         "Content-Type": "application/json"
     }
     
+    # Get package name
+    package_names = {
+        "credit_100k": "62 Credits",
+        "credit_200k": "125 Credits",
+        "credit_500k": "312 Credits",
+        "plan_1day": "1 Day Plan",
+        "plan_3days": "3 Days Plan",
+        "plan_7days": "7 Days Plan"
+    }
+    
+    package_name = package_names.get(package_id, package_id)
+    
     payload = {
-        "transaction_id": transaction_id,
+        "order_id": order_id,
         "amount": payment_calc["final_amount"],
-        "payment_method": payment_method,
-        "customer_email": current_user["email"],
-        "customer_name": current_user["name"],
-        "description": f"{package_type.upper()} - {package_id}"
+        "description": f"DINOSAUROTP - {package_name}",
+        "return_url": "https://ivrflow.preview.emergentagent.com/topup",
+        "product_detail": [
+            {
+                "name": package_name,
+                "price": payment_calc["final_amount"],
+                "qty": 1
+            }
+        ],
+        "customer_detail": {
+            "name": current_user["name"],
+            "email": current_user["email"],
+            "phone": "08123456789"
+        }
     }
     
     try:
