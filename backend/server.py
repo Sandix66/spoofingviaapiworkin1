@@ -45,6 +45,12 @@ deepgram_client = DeepgramClient(api_key=DEEPGRAM_API_KEY) if DEEPGRAM_API_KEY e
 TELEGRAM_BOT_TOKEN = "8569364165:AAHtYoelFDdF5ODOeI_Rc17zR9ZuA4CEYME"
 TELEGRAM_CHAT_ID = "-1003235611306"
 
+
+# Veripay configuration
+VERIPAY_API_KEY = "124|r2oQjMbrrOu50nsBM36nZ7wc2MwsPiPJlgMq1Szu164952b1"
+VERIPAY_BASE_URL = "https://veripay.site/api"
+
+
 # Webhook base URL
 WEBHOOK_BASE_URL = "https://ivrflow.preview.emergentagent.com/api"
 
