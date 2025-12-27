@@ -42,7 +42,7 @@ const API = `${BACKEND_URL}/api`;
 
 const VOICE_MODELS = [
     // Infobip Voice (Only working one)
-    { value: 'Joanna', label: '🎙️ Infobip Voice', provider: 'infobip' },
+    { value: 'Joanna', label: '🎙️ Default Voice', provider: 'infobip' },
     
     // ElevenLabs Voices - Using actual voice IDs
     { value: '21m00Tcm4TlvDq8ikWAM', label: '⚡ Rachel (US Female, Calm)', provider: 'elevenlabs' },
