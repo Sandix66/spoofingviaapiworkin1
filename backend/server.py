@@ -1523,7 +1523,19 @@ async def approve_topup(request_id: str, admin: dict = Depends(get_admin_user)):
                 "user_id": user_id,
                 "plan": package_id,
                 "fup_minutes": plan_info["fup_minutes"]
-
+            })
+    
+    # Mark request as approved
+    await db.topup_requests.update_one(
+        {"id": request_id},
+        {"$set": {
+            "status": "approved",
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+            "approved_by": admin["id"]
+        }}
+    )
+    
+    return {"message": "Top-up request approved"}
 
 # ==================== VERIPAY PAYMENT ROUTES ====================
 
