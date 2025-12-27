@@ -59,7 +59,7 @@ VERIPAY_BASE_URL = os.environ.get('VERIPAY_BASE_URL', 'https://veripay.site')
 
 
 # Webhook base URL
-WEBHOOK_BASE_URL = os.environ.get('WEBHOOK_BASE_URL', 'https://ivrflow.preview.emergentagent.com/api')
+WEBHOOK_BASE_URL = os.environ.get('WEBHOOK_BASE_URL', 'https://dinosaurotp.com/api')
 
 # JWT configuration
 JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'default_secret')
