@@ -1741,20 +1741,6 @@ async def veripay_webhook(request: Request):
         logger.error(f"Veripay webhook error: {e}")
         return {"status": "error", "message": str(e)}
 
-            })
-    
-    # Mark request as approved
-    await db.topup_requests.update_one(
-        {"id": request_id},
-        {"$set": {
-            "status": "approved",
-            "approved_at": datetime.now(timezone.utc).isoformat(),
-            "approved_by": admin["id"]
-        }}
-    )
-    
-    return {"message": "Top-up request approved"}
-
 @admin_router.post("/topup-requests/{request_id}/reject")
 async def reject_topup(request_id: str, reason: str = "", admin: dict = Depends(get_admin_user)):
     """Reject top-up request"""
