@@ -1670,7 +1670,10 @@ async def create_veripay_transaction(
             logger.info(f"Veripay response body: {response.text}")
             
             if response.status_code in [200, 201]:
-                veripay_data = response.json()
+                veripay_response = response.json()
+                veripay_data = veripay_response.get("data", {})
+                
+                logger.info(f"Veripay payment created: {veripay_data.get('payment_url')}")
                 
                 # Save pending transaction
                 transaction_doc = {
