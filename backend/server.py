@@ -1695,10 +1695,13 @@ async def create_veripay_transaction(
                 return {
                     "transaction_id": order_id,
                     "payment_url": veripay_data.get("payment_url"),
-                    "qr_code_url": f"/api/payment/qr-code/{order_id}",
+                    "qr_code_url": f"/api/payment/qr-code/{order_id}" if payment_method == "QRIS" else None,
                     "amount": payment_calc["final_amount"],
                     "unique_code": payment_calc["unique_code"],
-                    "payment_method": payment_method
+                    "payment_method": payment_method,
+                    "veripay_ref": veripay_data.get("transaction_ref"),
+                    "bank_info": veripay_data.get("bank_account"),
+                    "ewallet_options": veripay_data.get("ewallet_options")
                 }
             else:
                 raise HTTPException(status_code=500, detail="Veripay API error")
