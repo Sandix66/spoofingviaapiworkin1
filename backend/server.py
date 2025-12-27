@@ -1706,6 +1706,52 @@ async def create_veripay_transaction(
         logger.error(f"Veripay transaction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@payment_router.get("/qr-code/{order_id}")
+async def get_qr_code_proxy(order_id: str, current_user: dict = Depends(get_current_user)):
+    """Get QR code for payment (proxy to hide Veripay)"""
+    try:
+        # Get transaction
+        transaction = await db.veripay_transactions.find_one({"id": order_id}, {"_id": 0})
+        
+        if not transaction:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+        
+        if transaction.get("user_id") != current_user["id"]:
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        
+        payment_url = transaction.get("veripay_data", {}).get("payment_url")
+        
+        if payment_url:
+            # Fetch QR code from Veripay payment page
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(payment_url)
+                
+                # Extract QR code from HTML or use payment URL to generate QR
+                # For now, generate QR from payment URL
+                import qrcode
+                from io import BytesIO
+                
+                qr = qrcode.QRCode(version=1, box_size=10, border=4)
+                qr.add_data(payment_url)
+                qr.make(fit=True)
+                
+                img = qr.make_image(fill_color="black", back_color="white")
+                
+                # Convert to bytes
+                img_io = BytesIO()
+                img.save(img_io, 'PNG')
+                img_io.seek(0)
+                
+                return Response(content=img_io.getvalue(), media_type="image/png")
+        else:
+            raise HTTPException(status_code=404, detail="Payment URL not found")
+            
+    except Exception as e:
+        logger.error(f"QR code proxy error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @payment_router.post("/webhook")
 async def veripay_webhook(request: Request):
     """Veripay payment webhook - auto approve on success"""
