@@ -1523,6 +1523,212 @@ async def approve_topup(request_id: str, admin: dict = Depends(get_admin_user)):
                 "user_id": user_id,
                 "plan": package_id,
                 "fup_minutes": plan_info["fup_minutes"]
+
+
+# ==================== VERIPAY PAYMENT ROUTES ====================
+
+def calculate_gross_up(price: int, method: str) -> dict:
+    """Calculate total dengan gross-up fee dan unique code"""
+    import random
+    
+    # Gross up fee calculation
+    if method in ['QRIS', 'EWALLET']:
+        # 2% fee
+        base_total = price / 0.98
+    elif method == 'BANK_TRANSFER':
+        # Rp 2,500 + 1%
+        base_total = (price + 2500) / 0.99
+    else:
+        base_total = price
+    
+    total_with_fee = int(base_total) + 1  # Round up
+    
+    # Generate unique code (1-999)
+    unique_code = random.randint(1, 999)
+    
+    final_amount = total_with_fee + unique_code
+    
+    return {
+        "original_price": price,
+        "after_fee": total_with_fee,
+        "unique_code": unique_code,
+        "final_amount": final_amount
+    }
+
+@payment_router.post("/create-transaction")
+async def create_veripay_transaction(
+    package_type: str,
+    package_id: str,
+    payment_method: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create Veripay payment transaction"""
+    # Get package info
+    credit_packages = {
+        "credit_100k": 100000, "credit_200k": 200000, "credit_300k": 300000,
+        "credit_400k": 400000, "credit_500k": 500000, "credit_600k": 600000,
+        "credit_700k": 700000, "credit_800k": 800000, "credit_900k": 900000,
+        "credit_1jt": 1000000
+    }
+    
+    plan_packages = {
+        "plan_1day": 500000,
+        "plan_3days": 1450000,
+        "plan_7days": 3250000
+    }
+    
+    # Get price
+    if package_type == "credit":
+        original_price = credit_packages.get(package_id, 0)
+    else:
+        original_price = plan_packages.get(package_id, 0)
+    
+    if original_price == 0:
+        raise HTTPException(status_code=400, detail="Invalid package")
+    
+    # Calculate with gross-up
+    payment_calc = calculate_gross_up(original_price, payment_method)
+    
+    # Create transaction ID
+    transaction_id = f"TRX{uuid.uuid4().hex[:12].upper()}"
+    
+    # Call Veripay API
+    veripay_url = f"{VERIPAY_BASE_URL}/create-transaction"
+    headers = {
+        "Authorization": f"Bearer {VERIPAY_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "transaction_id": transaction_id,
+        "amount": payment_calc["final_amount"],
+        "payment_method": payment_method,
+        "customer_email": current_user["email"],
+        "customer_name": current_user["name"],
+        "description": f"{package_type.upper()} - {package_id}"
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(veripay_url, json=payload, headers=headers)
+            
+            if response.status_code in [200, 201]:
+                veripay_data = response.json()
+                
+                # Save pending transaction
+                transaction_doc = {
+                    "id": transaction_id,
+                    "user_id": current_user["id"],
+                    "package_type": package_type,
+                    "package_id": package_id,
+                    "payment_method": payment_method,
+                    "original_price": original_price,
+                    "unique_code": payment_calc["unique_code"],
+                    "final_amount": payment_calc["final_amount"],
+                    "status": "pending",
+                    "veripay_data": veripay_data,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.veripay_transactions.insert_one(transaction_doc)
+                
+                return {
+                    "transaction_id": transaction_id,
+                    "payment_url": veripay_data.get("payment_url"),
+                    "qr_code": veripay_data.get("qr_code"),
+                    "amount": payment_calc["final_amount"],
+                    "unique_code": payment_calc["unique_code"]
+                }
+            else:
+                raise HTTPException(status_code=500, detail="Veripay API error")
+                
+    except Exception as e:
+        logger.error(f"Veripay transaction error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@payment_router.post("/webhook")
+async def veripay_webhook(request: Request):
+    """Veripay payment webhook - auto approve on success"""
+    try:
+        body = await request.json()
+        logger.info(f"Veripay webhook received: {json.dumps(body)}")
+        
+        transaction_id = body.get("transaction_id")
+        status = body.get("status")
+        
+        if status == "success":
+            # Find transaction
+            transaction = await db.veripay_transactions.find_one({"id": transaction_id}, {"_id": 0})
+            
+            if transaction:
+                # Auto-approve credits/plan
+                user_id = transaction.get("user_id")
+                package_type = transaction.get("package_type")
+                package_id = transaction.get("package_id")
+                
+                # Use same logic as manual approval
+                if package_type == "credit":
+                    credit_packages = {
+                        "credit_100k": 62, "credit_200k": 125, "credit_300k": 187,
+                        "credit_400k": 250, "credit_500k": 312, "credit_600k": 375,
+                        "credit_700k": 437, "credit_800k": 500, "credit_900k": 562,
+                        "credit_1jt": 625
+                    }
+                    credits = credit_packages.get(package_id, 0)
+                    
+                    await db.users.update_one(
+                        {"id": user_id},
+                        {"$inc": {"credits": credits}}
+                    )
+                    
+                elif package_type == "plan":
+                    plan_packages = {
+                        "plan_1day": {"days": 1, "fup_minutes": 400},
+                        "plan_3days": {"days": 3, "fup_minutes": 1100},
+                        "plan_7days": {"days": 7, "fup_minutes": 2300}
+                    }
+                    
+                    plan_info = plan_packages.get(package_id)
+                    if plan_info:
+                        expiry = (datetime.now(timezone.utc) + timedelta(days=plan_info["days"])).isoformat()
+                        
+                        plan_doc = {
+                            "id": str(uuid.uuid4()),
+                            "user_id": user_id,
+                            "package_id": package_id,
+                            "fup_minutes": plan_info["fup_minutes"],
+                            "used_minutes": 0,
+                            "expires_at": expiry,
+                            "is_active": True,
+                            "created_at": datetime.now(timezone.utc).isoformat()
+                        }
+                        
+                        await db.user_plans.update_many(
+                            {"user_id": user_id},
+                            {"$set": {"is_active": False}}
+                        )
+                        
+                        await db.user_plans.insert_one(plan_doc)
+                
+                # Mark transaction as completed
+                await db.veripay_transactions.update_one(
+                    {"id": transaction_id},
+                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                
+                await log_activity(user_id, "payment_success_auto", {
+                    "transaction_id": transaction_id,
+                    "package": package_id
+                })
+                
+                logger.info(f"Auto-approved payment: {transaction_id}")
+        
+        return {"status": "processed"}
+        
+    except Exception as e:
+        logger.error(f"Veripay webhook error: {e}")
+        return {"status": "error", "message": str(e)}
+
             })
     
     # Mark request as approved
