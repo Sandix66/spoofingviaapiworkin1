@@ -1647,13 +1647,14 @@ async def create_veripay_transaction(
         "plan_7days": "7 Days Plan"
     }
     
-    package_name = package_names.get(package_id, package_id)
+    # Determine base URL (production or preview)
+    base_url = os.environ.get('APP_BASE_URL', 'https://dinosaurotp.com')
     
     payload = {
         "order_id": order_id,
         "amount": payment_calc["final_amount"],
         "description": f"DINOSAUROTP - {package_name}",
-        "return_url": "https://ivrflow.preview.emergentagent.com/topup",
+        "return_url": f"{base_url}/topup",
         "product_detail": [
             {
                 "name": package_name,
