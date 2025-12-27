@@ -81,6 +81,7 @@ voice_router = APIRouter(prefix="/voice", tags=["Voice Calls"])
 otp_router = APIRouter(prefix="/otp", tags=["OTP Bot"])
 admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 user_router = APIRouter(prefix="/user", tags=["User Profile"])
+payment_router = APIRouter(prefix="/payment", tags=["Payment"])
 
 
 # ==================== MODELS ====================
