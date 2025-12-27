@@ -136,6 +136,39 @@ const TopupPage = () => {
                     </TabsTrigger>
                 </TabsList>
 
+
+
+                {/* Payment Method Selector */}
+                <div className="mb-6 p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
+                    <p className="text-sm text-gray-300 mb-3">Select Payment Method:</p>
+                    <div className="flex gap-3">
+                        <Button
+                            onClick={() => setPaymentMethod('QRIS')}
+                            className={paymentMethod === 'QRIS' ? 'bg-cyan-600' : 'bg-gray-700'}
+                        >
+                            QRIS (2% fee)
+                        </Button>
+                        <Button
+                            onClick={() => setPaymentMethod('EWALLET')}
+                            className={paymentMethod === 'EWALLET' ? 'bg-cyan-600' : 'bg-gray-700'}
+                        >
+                            E-Wallet (2% fee)
+                        </Button>
+                        <Button
+                            onClick={() => setPaymentMethod('BANK_TRANSFER')}
+                            className={paymentMethod === 'BANK_TRANSFER' ? 'bg-cyan-600' : 'bg-gray-700'}
+                        >
+                            Bank Transfer (Rp2,500+1%)
+                        </Button>
+                        <Button
+                            onClick={() => setPaymentMethod('MANUAL')}
+                            className={paymentMethod === 'MANUAL' ? 'bg-purple-600' : 'bg-gray-700'}
+                        >
+                            Manual (Telegram)
+                        </Button>
+                    </div>
+                </div>
+
                 {/* Credits Tab */}
                 <TabsContent value="credits" className="mt-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
