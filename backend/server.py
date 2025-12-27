@@ -1743,7 +1743,24 @@ async def get_bank_list(current_user: dict = Depends(get_current_user)):
         ).decode()
         
         headers = {
-
+            "Authorization": f"Bearer {VERIPAY_API_KEY}",
+            "x-api-key": VERIPAY_API_KEY,
+            "x-timestamp": str(timestamp),
+            "x-signature": signature
+        }
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(f"{VERIPAY_BASE_URL}/api/v1/merchant/references/my-banks", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                return data
+            else:
+                return {"banks": []}
+                
+    except Exception as e:
+        logger.error(f"Failed to fetch banks: {e}")
+        return {"banks": []}
 
 @payment_router.get("/payment-details/{order_id}")
 async def get_payment_details(order_id: str, current_user: dict = Depends(get_current_user)):
