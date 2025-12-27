@@ -90,15 +90,15 @@ const DashboardLayout = ({ children }) => {
                             </div>
                             <div>
                                 <h1 className="font-black text-xl" style={{
-                                    background: 'linear-gradient(to bottom, #22d3ee, #0891b2)',
+                                    background: 'linear-gradient(135deg, #67e8f9 0%, #22d3ee 50%, #0891b2 100%)',
                                     WebkitBackgroundClip: 'text',
                                     WebkitTextFillColor: 'transparent',
-                                    textShadow: '0 0 20px rgba(34, 211, 238, 0.5)',
-                                    filter: 'drop-shadow(0 0 2px #fbbf24)'
+                                    filter: 'drop-shadow(0 0 8px rgba(103, 232, 249, 0.8)) drop-shadow(0 2px 4px rgba(251, 191, 36, 0.6))',
+                                    textShadow: '0 0 20px rgba(103, 232, 249, 0.5)'
                                 }}>
                                     DINOSAUROTP
                                 </h1>
-                                <p className="text-xs text-gray-500">Campus Project</p>
+                                <p className="text-xs text-cyan-400">WELCOME {user?.name?.toUpperCase() || 'USER'}</p>
                             </div>
                         </div>
                     </div>
