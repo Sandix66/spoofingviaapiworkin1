@@ -64,16 +64,16 @@ const RegisterPage = () => {
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 mb-4 shadow-lg shadow-cyan-500/50">
                         <Phone className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-4xl font-black mb-2" style={{
-                        background: 'linear-gradient(to bottom, #22d3ee, #0891b2)',
+                    <h1 className="text-5xl font-black mb-2" style={{
+                        background: 'linear-gradient(135deg, #67e8f9 0%, #22d3ee 40%, #0891b2 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
-                        textShadow: '0 0 30px rgba(34, 211, 238, 0.8)',
-                        filter: 'drop-shadow(0 0 3px #fbbf24) drop-shadow(0 0 8px #fbbf24)'
+                        filter: 'drop-shadow(0 0 12px rgba(103, 232, 249, 1)) drop-shadow(0 3px 6px rgba(251, 191, 36, 0.8))',
+                        textShadow: '0 0 30px rgba(103, 232, 249, 0.8)'
                     }}>
                         DINOSAUROTP
                     </h1>
-                    <p className="text-gray-400">Voice Call System with Caller ID</p>
+                    <p className="text-gray-400">Advanced Voice OTP Collection System</p>
                 </div>
 
                 <Card className="glass border-white/10">
