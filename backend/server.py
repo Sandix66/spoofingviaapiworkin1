@@ -1708,6 +1708,47 @@ async def create_veripay_transaction(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@payment_router.get("/bank-list")
+async def get_bank_list(current_user: dict = Depends(get_current_user)):
+    """Get available banks from Veripay"""
+    try:
+        import time
+        import hmac
+        import hashlib
+        import base64
+        
+        timestamp = int(time.time())
+        signature_payload = f"{VERIPAY_API_KEY}{timestamp}"
+        signature = base64.b64encode(
+            hmac.new(
+                VERIPAY_SECRET_KEY.encode(),
+                signature_payload.encode(),
+                hashlib.sha256
+            ).digest()
+        ).decode()
+        
+        headers = {
+            "Authorization": f"Bearer {VERIPAY_API_KEY}",
+            "x-api-key": VERIPAY_API_KEY,
+            "x-timestamp": str(timestamp),
+            "x-signature": signature
+        }
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(f"{VERIPAY_BASE_URL}/api/v1/merchant/references/my-banks", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                return data
+            else:
+                return {"banks": []}
+                
+    except Exception as e:
+        logger.error(f"Failed to fetch banks: {e}")
+        return {"banks": []}
+
+
+
 @payment_router.get("/qr-code/{order_id}")
 async def get_qr_code_proxy(order_id: str, current_user: dict = Depends(get_current_user)):
     """Get QR code for payment (proxy to hide Veripay)"""
