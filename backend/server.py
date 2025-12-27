@@ -1743,6 +1743,57 @@ async def get_bank_list(current_user: dict = Depends(get_current_user)):
         ).decode()
         
         headers = {
+
+
+@payment_router.get("/payment-details/{order_id}")
+async def get_payment_details(order_id: str, current_user: dict = Depends(get_current_user)):
+    """Get payment details (bank account, e-wallet options) without redirect"""
+    try:
+        transaction = await db.veripay_transactions.find_one({"id": order_id}, {"_id": 0})
+        
+        if not transaction or transaction.get("user_id") != current_user["id"]:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+        
+        payment_url = transaction.get("veripay_data", {}).get("payment_url")
+        payment_method = transaction.get("payment_method")
+        
+        # Fetch payment page content
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(payment_url)
+            html_content = response.text
+            
+            # Parse HTML to extract payment details
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            payment_details = {
+                "payment_method": payment_method,
+                "amount": transaction.get("final_amount")
+            }
+            
+            if payment_method == "BANK_TRANSFER":
+                # Extract bank details
+                # This is placeholder - actual parsing depends on Veripay HTML structure
+                payment_details["banks"] = [
+                    {"name": "BCA", "account": "1234567890", "account_name": "PT VERIPAY"},
+                    {"name": "BNI", "account": "9876543210", "account_name": "PT VERIPAY"},
+                    {"name": "Mandiri", "account": "1357924680", "account_name": "PT VERIPAY"}
+                ]
+            elif payment_method == "EWALLET":
+                # E-wallet options
+                payment_details["wallets"] = [
+                    {"name": "DANA", "number": "08123456789"},
+                    {"name": "OVO", "number": "08123456789"},
+                    {"name": "GoPay", "number": "08123456789"},
+                    {"name": "ShopeePay", "qr_available": True}
+                ]
+            
+            return payment_details
+            
+    except Exception as e:
+        logger.error(f"Failed to get payment details: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
             "Authorization": f"Bearer {VERIPAY_API_KEY}",
             "x-api-key": VERIPAY_API_KEY,
             "x-timestamp": str(timestamp),
