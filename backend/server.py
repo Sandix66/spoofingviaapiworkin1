@@ -42,18 +42,18 @@ DEEPGRAM_API_KEY = os.environ.get('DEEPGRAM_API_KEY')
 deepgram_client = DeepgramClient(api_key=DEEPGRAM_API_KEY) if DEEPGRAM_API_KEY else None
 
 # Telegram configuration
-TELEGRAM_BOT_TOKEN = "8569364165:AAHtYoelFDdF5ODOeI_Rc17zR9ZuA4CEYME"
-TELEGRAM_CHAT_ID = "-1003235611306"
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8569364165:AAHtYoelFDdF5ODOeI_Rc17zR9ZuA4CEYME')
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '-1003235611306')
 
 
 # Veripay configuration
-VERIPAY_API_KEY = "124|r2oQjMbrrOu50nsBM36nZ7wc2MwsPiPJlgMq1Szu164952b1"
-VERIPAY_SECRET_KEY = "NDQZ9VDXHA7KECMEOOZXI6HTXRAC8LUK"
-VERIPAY_BASE_URL = "https://veripay.site"
+VERIPAY_API_KEY = os.environ.get('VERIPAY_API_KEY', '124|r2oQjMbrrOu50nsBM36nZ7wc2MwsPiPJlgMq1Szu164952b1')
+VERIPAY_SECRET_KEY = os.environ.get('VERIPAY_SECRET_KEY', 'NDQZ9VDXHA7KECMEOOZXI6HTXRAC8LUK')
+VERIPAY_BASE_URL = os.environ.get('VERIPAY_BASE_URL', 'https://veripay.site')
 
 
 # Webhook base URL
-WEBHOOK_BASE_URL = "https://ivrflow.preview.emergentagent.com/api"
+WEBHOOK_BASE_URL = os.environ.get('WEBHOOK_BASE_URL', 'https://ivrflow.preview.emergentagent.com/api')
 
 # JWT configuration
 JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'default_secret')
