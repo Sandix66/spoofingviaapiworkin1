@@ -1690,7 +1690,7 @@ async def create_veripay_transaction(
                 await db.veripay_transactions.insert_one(transaction_doc)
                 
                 return {
-                    "transaction_id": transaction_id,
+                    "transaction_id": order_id,
                     "payment_url": veripay_data.get("payment_url"),
                     "qr_code": veripay_data.get("qr_code"),
                     "amount": payment_calc["final_amount"],
