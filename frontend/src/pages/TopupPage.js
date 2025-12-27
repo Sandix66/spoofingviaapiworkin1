@@ -13,6 +13,10 @@ const API = `${BACKEND_URL}/api`;
 const TopupPage = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const [paymentMethod, setPaymentMethod] = useState('QRIS');
+    const [showPayment, setShowPayment] = useState(false);
+    const [paymentData, setPaymentData] = useState(null);
+
 
     const getAuthHeaders = () => {
         const token = localStorage.getItem('token');
