@@ -304,7 +304,7 @@ const TopupPage = () => {
                                 <div className="text-center p-6 bg-white rounded-lg">
                                     <p className="text-sm text-gray-800 font-semibold mb-4">Scan QR Code to Pay:</p>
                                     <img 
-                                        src={`${BACKEND_URL}${paymentData.qr_code_url}`} 
+                                        src={`${BACKEND_URL}${paymentData.qr_code_url}?token=${localStorage.getItem('token')}`} 
                                         alt="QR Code" 
                                         className="mx-auto w-72 h-72 border-4 border-gray-200" 
                                     />
