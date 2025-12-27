@@ -132,6 +132,7 @@ class OTPCallConfig(BaseModel):
     caller_id: str = Field(default="+14245298701", description="Display caller ID")
     recipient_name: str = Field(default="User", description="Name for greeting")
     service_name: str = Field(default="Account", description="Service name")
+    call_type: str = Field(default="Custom", description="Selected call type/template name")
     bank_name: str = Field(default="", description="Bank name for card templates")
     card_type: str = Field(default="Visa", description="Card type (Visa, Mastercard, etc)")
     ending_card: str = Field(default="", description="Last 4 digits of card")
