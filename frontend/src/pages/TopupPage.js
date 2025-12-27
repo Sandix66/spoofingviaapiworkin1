@@ -178,7 +178,13 @@ const TopupPage = () => {
                                 className={`relative bg-gray-800/50 border-gray-700 hover:border-cyan-500/50 cursor-pointer transition ${
                                     pkg.popular ? 'border-purple-500/50' : ''
                                 }`}
-                                onClick={() => handleRequestTopup('credit', pkg.id, pkg.price)}
+                                onClick={() => {
+                                    if (paymentMethod === 'MANUAL') {
+                                        handleRequestTopup('credit', pkg.id, pkg.price);
+                                    } else {
+                                        handleAutoPayment('credit', pkg.id, pkg.price);
+                                    }
+                                }}
                             >
                                 {pkg.popular && (
                                     <div className="absolute -top-3 right-3 bg-purple-600 text-white text-xs px-3 py-1 rounded-full">
