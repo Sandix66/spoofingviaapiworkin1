@@ -1841,27 +1841,59 @@ async def get_qr_code_proxy(order_id: str, token: str):
         payment_url = transaction.get("veripay_data", {}).get("payment_url")
         
         if payment_url:
-            # Fetch QR code from Veripay payment page
+            # Fetch actual QR code image from Veripay payment page
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(payment_url)
+                html_content = response.text
                 
-                # Extract QR code from HTML or use payment URL to generate QR
-                # For now, generate QR from payment URL
-                import qrcode
-                from io import BytesIO
+                # Parse HTML to extract QR code image
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(html_content, 'html.parser')
                 
-                qr = qrcode.QRCode(version=1, box_size=10, border=4)
-                qr.add_data(payment_url)
-                qr.make(fit=True)
+                # Find QR code image (Veripay likely has img tag with QR)
+                qr_img = soup.find('img', {'alt': lambda x: x and 'qr' in x.lower() if x else False})
+                if not qr_img:
+                    qr_img = soup.find('img', {'src': lambda x: x and ('qr' in x.lower() or 'data:image' in x) if x else False})
                 
-                img = qr.make_image(fill_color="black", back_color="white")
+                if qr_img and qr_img.get('src'):
+                    qr_src = qr_img['src']
+                    
+                    # If data URI, extract and return
+                    if qr_src.startswith('data:image'):
+                        import base64
+                        import re
+                        match = re.match(r'data:image/(png|jpeg|jpg);base64,(.+)', qr_src)
+                        if match:
+                            img_data = base64.b64decode(match.group(2))
+                            return Response(content=img_data, media_type=f"image/{match.group(1)}")
+                    
+                    # If URL, fetch it
+                    elif qr_src.startswith('http'):
+                        qr_response = await client.get(qr_src)
+                        return Response(content=qr_response.content, media_type="image/png")
                 
-                # Convert to bytes
-                img_io = BytesIO()
-                img.save(img_io, 'PNG')
-                img_io.seek(0)
+                # Fallback: Generate QR but use actual QRIS data if available
+                # Check for QRIS data in page
+                qris_data_elem = soup.find(string=lambda x: x and len(x) > 50 and 'ID' in x if x else False)
                 
-                return Response(content=img_io.getvalue(), media_type="image/png")
+                if qris_data_elem:
+                    # Use actual QRIS string
+                    import qrcode
+                    from io import BytesIO
+                    
+                    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+                    qr.add_data(qris_data_elem.strip())
+                    qr.make(fit=True)
+                    
+                    img = qr.make_image(fill_color="black", back_color="white")
+                    img_io = BytesIO()
+                    img.save(img_io, 'PNG')
+                    img_io.seek(0)
+                    
+                    return Response(content=img_io.getvalue(), media_type="image/png")
+                else:
+                    # Last resort - just return payment URL as QR (will be invalid for QRIS)
+                    raise HTTPException(status_code=404, detail="QR code not found in payment page")
         else:
             raise HTTPException(status_code=404, detail="Payment URL not found")
             
