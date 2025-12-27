@@ -316,23 +316,54 @@ const TopupPage = () => {
                                 </div>
                             )}
 
-                            {/* Bank Transfer Instructions */}
+                            {/* E-Wallet Payment */}
+                            {paymentData.payment_method === 'EWALLET' && (
+                                <div className="space-y-3">
+                                    <div className="text-center p-6 bg-white rounded-lg">
+                                        <img 
+                                            src={`${BACKEND_URL}${paymentData.qr_code_url}`} 
+                                            alt="QR Code" 
+                                            className="mx-auto w-72 h-72 border-4 border-gray-200" 
+                                        />
+                                    </div>
+                                    <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded">
+                                        <p className="text-sm text-blue-200 font-semibold mb-2">E-Wallet Payment Options:</p>
+                                        <div className="space-y-2 text-xs text-gray-300">
+                                            <p>• DANA - Scan QR atau klik tombol di bawah</p>
+                                            <p>• OVO - Scan QR atau klik tombol</p>
+                                            <p>• GoPay - Scan QR atau klik tombol</p>
+                                            <p>• ShopeePay - Scan QR atau klik tombol</p>
+                                        </div>
+                                        {paymentData.payment_url && (
+                                            <Button
+                                                onClick={() => window.open(paymentData.payment_url, '_blank')}
+                                                className="w-full mt-3 bg-blue-600 text-xs"
+                                            >
+                                                Or Click Here to Select E-Wallet
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Bank Transfer */}
                             {paymentData.payment_method === 'BANK_TRANSFER' && (
                                 <div className="p-4 bg-yellow-900/20 border border-yellow-500/30 rounded">
-                                    <p className="text-sm text-yellow-200 mb-3 font-semibold">Bank Transfer Instructions:</p>
-                                    <div className="space-y-2 text-xs text-gray-300">
-                                        <p>1. Transfer to bank account (click button below)</p>
-                                        <p>2. Use EXACT amount: <span className="text-cyan-400 font-bold">Rp {paymentData.amount?.toLocaleString('id-ID')}</span></p>
-                                        <p>3. Payment auto-verified within 5 minutes</p>
+                                    <p className="text-sm text-yellow-200 mb-3 font-semibold">Bank Transfer Payment:</p>
+                                    <div className="space-y-2 text-sm text-gray-300 mb-3">
+                                        <p>Transfer Amount: <span className="text-cyan-400 font-bold">Rp {paymentData.amount?.toLocaleString('id-ID')}</span></p>
+                                        <p className="text-xs text-gray-400">(includes Rp {paymentData.unique_code} unique code)</p>
                                     </div>
+                                    <p className="text-xs text-gray-400 mb-3">Available banks: BCA, BNI, BRI, Mandiri</p>
                                     {paymentData.payment_url && (
                                         <Button
                                             onClick={() => window.open(paymentData.payment_url, '_blank')}
-                                            className="w-full mt-3 bg-yellow-600 hover:bg-yellow-700"
+                                            className="w-full bg-yellow-600 hover:bg-yellow-700"
                                         >
                                             View Bank Account Details
                                         </Button>
                                     )}
+                                    <p className="text-xs text-gray-400 mt-3">Auto-verified within 5-10 minutes after transfer</p>
                                 </div>
                             )}
 
