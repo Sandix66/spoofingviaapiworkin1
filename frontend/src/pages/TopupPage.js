@@ -330,6 +330,12 @@ export default TopupPage;
                                 <p>Credits/Plan will be activated instantly</p>
                             </div>
                         </div>
+        </div>
+    );
+};
+
+export default TopupPage;
+
                     )}
                 </DialogContent>
             </Dialog>
