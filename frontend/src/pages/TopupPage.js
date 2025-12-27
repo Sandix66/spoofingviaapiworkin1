@@ -222,7 +222,13 @@ const TopupPage = () => {
                             <Card 
                                 key={pkg.id}
                                 className="bg-gray-800/50 border-gray-700 hover:border-cyan-500/50 cursor-pointer transition"
-                                onClick={() => handleRequestTopup('plan', pkg.id, pkg.price)}
+                                onClick={() => {
+                                    if (paymentMethod === 'MANUAL') {
+                                        handleRequestTopup('plan', pkg.id, pkg.price);
+                                    } else {
+                                        handleAutoPayment('plan', pkg.id, pkg.price);
+                                    }
+                                }}
                             >
                                 <CardHeader>
                                     <CardTitle className="text-center text-white text-2xl">
