@@ -1814,9 +1814,15 @@ async def get_payment_details(order_id: str, current_user: dict = Depends(get_cu
 
 
 @payment_router.get("/qr-code/{order_id}")
-async def get_qr_code_proxy(order_id: str, current_user: dict = Depends(get_current_user)):
-    """Get QR code for payment (proxy to hide Veripay)"""
+async def get_qr_code_proxy(order_id: str, token: str):
+    """Get QR code for payment - token auth for img tag"""
     try:
+        # Verify token
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
         # Get transaction
         transaction = await db.veripay_transactions.find_one({"id": order_id}, {"_id": 0})
         
