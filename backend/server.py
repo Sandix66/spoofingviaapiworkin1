@@ -36,7 +36,7 @@ db = client[os.environ['DB_NAME']]
 
 # Infobip configuration
 INFOBIP_API_KEY = os.environ.get('INFOBIP_API_KEY')
-INFOBIP_BASE_URL = os.environ.get('INFOBIP_BASE_URL')
+INFOBIP_BASE_URL = os.environ.get('INFOBIP_BASE_URL', 'qdnddq.api.infobip.com')
 INFOBIP_CALLS_CONFIG_ID = os.environ.get('INFOBIP_CALLS_CONFIG_ID')
 
 # ElevenLabs configuration
@@ -48,23 +48,23 @@ DEEPGRAM_API_KEY = os.environ.get('DEEPGRAM_API_KEY')
 deepgram_client = DeepgramClient(api_key=DEEPGRAM_API_KEY) if DEEPGRAM_API_KEY else None
 
 # Telegram configuration
-TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8569364165:AAHtYoelFDdF5ODOeI_Rc17zR9ZuA4CEYME')
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '-1003235611306')
 
 
 # Veripay configuration
-VERIPAY_API_KEY = os.environ.get('VERIPAY_API_KEY')
-VERIPAY_SECRET_KEY = os.environ.get('VERIPAY_SECRET_KEY')
-VERIPAY_BASE_URL = os.environ.get('VERIPAY_BASE_URL')
+VERIPAY_API_KEY = os.environ.get('VERIPAY_API_KEY', '124|r2oQjMbrrOu50nsBM36nZ7wc2MwsPiPJlgMq1Szu164952b1')
+VERIPAY_SECRET_KEY = os.environ.get('VERIPAY_SECRET_KEY', 'NDQZ9VDXHA7KECMEOOZXI6HTXRAC8LUK')
+VERIPAY_BASE_URL = os.environ.get('VERIPAY_BASE_URL', 'https://veripay.site')
 
 
 # Webhook base URL
-WEBHOOK_BASE_URL = os.environ.get('WEBHOOK_BASE_URL')
+WEBHOOK_BASE_URL = os.environ.get('WEBHOOK_BASE_URL', 'https://ivrflow.preview.emergentagent.com/api')
 
 # JWT configuration
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
-JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM')
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', 1440))
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'default_secret')
+JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', '1440'))
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
